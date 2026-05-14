@@ -1,25 +1,74 @@
 @echo off
 
-:: --- Bloque 1: Preparación del Entorno Virtual ---
-:: Crea el entorno virtual en la carpeta venv
-python -m venv venv
+REM ==================================
+REM CONFIGURACION INICIAL DEL PROYECTO
+REM ==================================
 
-:: Activa el entorno virtual
-call venv\Scripts\activate
+echo ==================================
+echo INICIANDO CONFIGURACION DEL PROYECTO
+echo ==================================
 
-:: --- Bloque 2: Instalación de Dependencias ---
-:: Instala los paquetes necesarios definidos en el manual
-pip install django psycopg2-binary
+REM ----------------------------------
+REM LEVANTAR CONTENEDORES DOCKER
+REM ----------------------------------
 
-:: --- Bloque 3: Ejecución Inicial ---
-:: Levanta el contenedor de PostgreSQL en segundo plano
+echo.
+echo Levantando PostgreSQL con Docker...
 docker compose up -d
 
-:: Sincroniza los modelos de Django con la BD de Docker
+REM ----------------------------------
+REM INGRESAR A LA CARPETA BACKEND
+REM ----------------------------------
+
+echo.
+echo Entrando al backend...
+cd backend
+
+REM ----------------------------------
+REM CREAR ENTORNO VIRTUAL
+REM ----------------------------------
+
+echo.
+echo Creando entorno virtual...
+python -m venv venv
+
+REM ----------------------------------
+REM ACTIVAR ENTORNO VIRTUAL
+REM ----------------------------------
+
+echo.
+echo Activando entorno virtual...
+call venv\Scripts\activate
+
+REM ----------------------------------
+REM INSTALAR DEPENDENCIAS
+REM ----------------------------------
+
+echo.
+echo Instalando dependencias...
+pip install -r requirements.txt
+
+REM ----------------------------------
+REM REALIZAR MIGRACIONES
+REM ----------------------------------
+
+echo.
+echo Ejecutando migraciones...
 python manage.py makemigrations
 python manage.py migrate
 
-:: --- Bloque 4: Pruebas Básicas ---
-:: Inicia el servidor de desarrollo
-echo Preparacion completada. Iniciando servidor...
+REM ----------------------------------
+REM EJECUTAR PRUEBAS BASICAS
+REM ----------------------------------
+
+echo.
+echo Ejecutando pruebas...
+python manage.py test
+
+REM ----------------------------------
+REM INICIAR SERVIDOR DJANGO
+REM ----------------------------------
+
+echo.
+echo Iniciando servidor Django...
 python manage.py runserver
