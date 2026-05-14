@@ -1,25 +1,74 @@
 #!/bin/bash
 
-# --- Bloque 1: Preparación del Entorno Virtual ---
-# Crea el entorno virtual para aislar las dependencias
-python3 -m venv venv
+# ==================================
+# CONFIGURACION INICIAL DEL PROYECTO
+# ==================================
 
-# Activa el entorno virtual
-source venv/bin/activate
+echo "=================================="
+echo "INICIANDO CONFIGURACION DEL PROYECTO"
+echo "=================================="
 
-# --- Bloque 2: Instalación de Dependencias ---
-# Instala Django y el driver de PostgreSQL mencionado en el tutorial
-pip install django psycopg2-binary
+# ----------------------------------
+# LEVANTAR CONTENEDORES DOCKER
+# ----------------------------------
 
-# --- Bloque 3: Ejecución Inicial ---
-# Levanta la base de datos (requiere Docker instalado)
+echo ""
+echo "Levantando PostgreSQL con Docker..."
 docker compose up -d
 
-# Realiza las migraciones para preparar la base de datos
+# ----------------------------------
+# INGRESAR A LA CARPETA BACKEND
+# ----------------------------------
+
+echo ""
+echo "Entrando al backend..."
+cd backend
+
+# ----------------------------------
+# CREAR ENTORNO VIRTUAL
+# ----------------------------------
+
+echo ""
+echo "Creando entorno virtual..."
+python -m venv venv
+
+# ----------------------------------
+# ACTIVAR ENTORNO VIRTUAL
+# ----------------------------------
+
+echo ""
+echo "Activando entorno virtual..."
+source venv/bin/activate
+
+# ----------------------------------
+# INSTALAR DEPENDENCIAS
+# ----------------------------------
+
+echo ""
+echo "Instalando dependencias..."
+pip install -r requirements.txt
+
+# ----------------------------------
+# REALIZAR MIGRACIONES
+# ----------------------------------
+
+echo ""
+echo "Ejecutando migraciones..."
 python manage.py makemigrations
 python manage.py migrate
 
-# --- Bloque 4: Pruebas Básicas ---
-# Ejecuta el servidor para verificar que todo inicia correctamente
-echo "Preparación completada. Iniciando servidor..."
+# ----------------------------------
+# EJECUTAR PRUEBAS BASICAS
+# ----------------------------------
+
+echo ""
+echo "Ejecutando pruebas..."
+python manage.py test
+
+# ----------------------------------
+# INICIAR SERVIDOR DJANGO
+# ----------------------------------
+
+echo ""
+echo "Iniciando servidor Django..."
 python manage.py runserver
