@@ -66,8 +66,7 @@ if (!(Test-Path "manage.py")) {
         Remove-Item "$AppPath\*" -Recurse -Force
 
         New-Item -Path "$AppPath\controllers" -ItemType Directory -Force
-        New-Item -Path "$AppPath\domain" -ItemType Directory -Force
-        New-Item -Path "$AppPath\domain\models.py" -ItemType File -Force
+        New-Item -Path "$AppPath\models.py" -ItemType File -Force
         New-Item -Path "$AppPath\migrations" -ItemType Directory -Force
         New-Item -Path "$AppPath\repositories" -ItemType Directory -Force
         New-Item -Path "$AppPath\services" -ItemType Directory -Force
