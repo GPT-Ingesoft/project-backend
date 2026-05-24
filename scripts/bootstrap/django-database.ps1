@@ -6,11 +6,11 @@ $RootDir = Resolve-Path (
 )
 
 $RequirementsFile = Resolve-Path (
-    Join-Path $PSScriptRoot "/requirements.txt"
+    Join-Path $PSScriptRoot "requirements.txt"
 )
 
 $DjangoTemplateFile = Resolve-Path (
-    Join-Path $PSScriptRoot "/Django_settings.py"
+    Join-Path $PSScriptRoot "Django_settings.py"
 )
 
 $BackendPath = Resolve-Path (
@@ -18,6 +18,10 @@ $BackendPath = Resolve-Path (
 )
 
 $DjangoSettings = Join-Path $BackendPath "config/settings.py"
+
+$AppName = "information_app"
+
+$AppPath = Join-Path $BackendPath $AppName
 
 # ---- Script ----
 Set-Location $RootDir
@@ -49,16 +53,32 @@ if (!(Test-Path "manage.py")) {
     Write-Host  "==================================`n"
 
     django-admin startproject config .
+    python manage.py startapp $AppName
     Copy-Item -Path $DjangoTemplateFile -Destination $DjangoSettings -Force
-    python manage.py migrate
-
-    python manage.py startapp products
-    (Add-Content $DjangoSettings "`nINSTALLED_APPS += ['products']")
     write-host  "Proyecto Django creado exitosamente.`n"
+
+    if (Test-Path $AppPath) {
+
+        Write-Host  "=================================="
+        Write-Host  "Configuracion de la plantilla de carpetas"
+        Write-Host  "==================================`n"
+
+        Remove-Item "$AppPath\*" -Recurse -Force
+
+        New-Item -Path "$AppPath\controllers" -ItemType Directory -Force
+        New-Item -Path "$AppPath\domain" -ItemType Directory -Force
+        New-Item -Path "$AppPath\domain\models.py" -ItemType File -Force
+        New-Item -Path "$AppPath\migrations" -ItemType Directory -Force
+        New-Item -Path "$AppPath\repositories" -ItemType Directory -Force
+        New-Item -Path "$AppPath\services" -ItemType Directory -Force
+
+        New-Item -Path "$AppPath\urls.py" -ItemType File -Force
+    }
 
 } else {
     Write-Host  "=================================="
     Write-Host  "Proyecto Django ya existe"
     Write-Host  "==================================`n"
 }
+
 

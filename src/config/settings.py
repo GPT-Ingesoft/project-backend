@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#&(1p9fd)y_zk)&7zf5(-16jee^co37q5u!p0!z^@2tv@nfo(g'
+SECRET_KEY = 'django-insecure-@5ju$j_1l6)san#!pdu+o7=1!ippnx6hw#_03e$ra!3$b!^65x'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -36,9 +36,16 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles']
+    'django.contrib.staticfiles',
+
+    'rest_framework',
+    'corsheaders',
+    'information_app'
+]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -71,16 +78,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = { 
-    'default': { 
-    'ENGINE': 'django.db.backends.postgresql', 
-    'NAME': 'syslab_db', 
-    'USER': 'django_user', 
-    'PASSWORD': '12345', 
-    'HOST': 'localhost', 
-    'PORT': '5434', 
-    } 
-} 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'syslab_db',
+        'USER': 'django_user',
+        'PASSWORD': '12345',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+
 
 
 # Password validation
@@ -119,4 +127,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-INSTALLED_APPS += ['products']
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]

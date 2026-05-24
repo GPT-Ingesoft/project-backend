@@ -19,6 +19,9 @@ Write-Host  "=================================="
 Write-Host  "Configuracion de un nuevo usuario y base de datos para Django"
 Write-Host  "==================================`n"
 
+# Dormir 5 segundos mientras inicializa el contenedor de PostgreSQL para evitar errores de conexión
+Start-Sleep -Seconds 5
+
 docker exec postgres_db psql -U admin -d postgres -c "CREATE USER $DjangoUser WITH PASSWORD '$DjangoPassword';"
 docker exec postgres_db psql -U admin -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE syslab_db TO $DjangoUser;"
 docker exec postgres_db psql -U admin -d syslab_db -c "GRANT ALL ON SCHEMA public TO $DjangoUser;"
