@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+venv-SysLab/
+
+# Django
+db.sqlite3
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
+
+# Environment variables
+.env
