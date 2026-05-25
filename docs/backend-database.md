@@ -80,4 +80,4 @@ Desde la raíz del proyecto:
 
 # Siguiente Paso
 
-Continuar con: [docs/django-structure.md](./docs/django-structure.md)
+Continuar con: [docs/django-structure.md](./django-structure.md)

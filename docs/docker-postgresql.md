@@ -176,4 +176,4 @@ Desde la raíz del proyecto:
 
 # Siguiente Paso
 
-Continuar con: [docs/ejecutar-backend.md](./docs/ejecutar-backend.md)
+Continuar con: [docs/ejecutar-backend.md](./ejecutar-backend.md)

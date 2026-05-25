@@ -254,4 +254,4 @@ La arquitectura general del backend puede observarse con mayor detalle en el sig
 
 # Siguiente Paso
 
-Continuar con: [docs/backend-database.md](./docs/backend-database.md)
+Continuar con: [docs/backend-database.md](./backend-database.md)
