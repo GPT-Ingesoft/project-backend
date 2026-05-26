@@ -48,5 +48,5 @@ Write-Host  "=================================="
 Write-Host  "Aplicando migraciones en PostgreSQL"
 Write-Host  "==================================`n"
 
-python manage.py migrate $AppName
+python manage.py migrate
 Write-Host  "`n[OK] Las tablas fueron creadas/actualizadas correctamente en PostgreSQL.`n"
