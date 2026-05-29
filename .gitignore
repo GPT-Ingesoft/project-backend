@@ -16,7 +16,7 @@ venv-SysLab/
 
 # Django
 db.sqlite3
-.config/
+config/
 
 # VSCode
 .vscode/
