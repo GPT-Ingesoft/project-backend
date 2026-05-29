@@ -23,11 +23,9 @@ set MANAGE_PY=%ROOT_DIR%\manage.py
 :: ============================================================
 
 :: Verify if the docker container "postgres_db" exists
-docker ps -a --filter "name=postgres_db" --format "{{.Names}}" | findstr /x "postgres_db" >nul 2>&1
-
+docker ps -a | findstr /i "postgres_db" >nul 2>&1
 if not errorlevel 1 (
-    docker ps --filter "name=postgres_db" --format "{{.Names}}" | findstr /x "postgres_db" >nul 2>&1
-
+    docker ps | findstr /i "postgres_db" >nul 2>&1
     if not errorlevel 1 (
         echo [INFO] Docker container postgres_db is already running.
         echo.
