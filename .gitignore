@@ -1,5 +1,9 @@
 # Python cache
+**/__pycache__/
 __pycache__/
+config/__pycache__/
+information_app/__pycache__/
+information_app/__pycache__//migrations/__pycache__/
 
 # Python compiled files
 *.pyc
@@ -12,6 +16,7 @@ venv-SysLab/
 
 # Django
 db.sqlite3
+.config/
 
 # VSCode
 .vscode/
