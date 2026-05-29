@@ -15,8 +15,6 @@ class Usuario(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
-    proveedor_oauth = models.CharField(max_length=50)   
-    oauth_id = models.CharField(max_length=255, unique=True) 
     rol = models.CharField(max_length=50, choices=ROL_CHOICES, default='docente')
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
