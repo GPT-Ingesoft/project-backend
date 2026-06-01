@@ -95,8 +95,6 @@ class MeView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
-
 class RegistrarUsuarioView(APIView):
     authentication_classes = []
     permission_classes     = []
@@ -105,18 +103,56 @@ class RegistrarUsuarioView(APIView):
         service = UsuarioServices()
 
         try:
-            service.extraer_usuario_del_token(request)
+            usuario_login = service.extraer_usuario_del_token(request)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
-        try:
-            usuario = service.registrar_usuario(request.data)
+
+        if not service.es_usuario_laboratorista(usuario_login):
             return Response(
-                {'mensaje': 'Usuario registrado exitosamente.', 'usuario': usuario},
+                {'error': 'Solo los usuarios laboratoristas pueden registrar nuevos usuarios.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            usuario_nuevo = service.registrar_usuario(request.data)
+            return Response(
+                {'mensaje': 'Usuario registrado exitosamente.', 'usuario': usuario_nuevo},
                 status=status.HTTP_201_CREATED,
             )
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response(
+                {'error': 'Error interno. Contacta al soporte.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+#################### DEBUG #################
+class RegistrarUsuarioDebugView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        service = UsuarioServices()
+
+        try:
+            usuario = service.registrar_usuario(request.data)
+
+            return Response(
+                {
+                    'mensaje': 'Usuario registrado exitosamente.',
+                    'usuario': usuario,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         except Exception:
             return Response(
                 {'error': 'Error interno. Contacta al soporte.'},

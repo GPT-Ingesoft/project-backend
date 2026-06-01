@@ -86,6 +86,18 @@ class UsuarioServices:
             'activo':           usuario.activo,
             'fecha_creacion':   usuario.fecha_creacion.isoformat(),
         }
+    
+    @staticmethod
+    def es_usuario_laboratorista(usuario) -> bool:
+        return usuario.rol == 'laboratorista'
+
+    @staticmethod
+    def es_usuario_docente(usuario) -> bool:
+        return usuario.rol == 'docente'
+    
+    @staticmethod
+    def es_usuario_tecnico(usuario) -> bool:
+        return usuario.rol == 'tecnico'
 
     # ── Modulo -> OAuth 2.0 ──────────────────────────────────────────────────────────────
     def generar_url_oauth(self, provider: str) -> str:
@@ -181,7 +193,7 @@ class UsuarioServices:
         return correo
 
     # ── Modulo -> JWT (JSON Web Token) ──────────────────────────────────────────────────────────────
-    def extraer_usuario_del_token(self, request):
+    def extraer_usuario_del_token(self, request) -> UsuarioRepository:
         auth = request.META.get('HTTP_AUTHORIZATION', '')
 
         if not auth.startswith('Bearer '):
