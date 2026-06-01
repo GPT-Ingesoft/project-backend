@@ -62,4 +62,35 @@ class UsuarioServices:
 
         return self.formato_datos_usuario(usuario)
 
+    def asignar_rol(self, usuario_id: int, rol: str) -> dict:
+        if rol not in ROLES_VALIDOS:
+            raise ValueError(f"El rol '{rol}' no es válido. Roles permitidos: {', '.join(ROLES_VALIDOS)}.")
 
+        usuario = self.usuario_repository.obtener_por_id(usuario_id)
+        if not usuario:
+            raise ValueError("Usuario no encontrado.")
+
+        usuario = self.usuario_repository.actualizar_rol(usuario, rol)
+        return self.formato_datos_usuario(usuario)
+
+    def cambiar_estado(self, usuario_id: int, activo: bool) -> dict:
+        usuario = self.usuario_repository.obtener_por_id(usuario_id)
+        if not usuario:
+            raise ValueError("Usuario no encontrado.")
+
+        usuario = self.usuario_repository.actualizar_estado(usuario, activo)
+        return self.formato_datos_usuario(usuario)
+
+    def verificar_acceso(self, usuario_id: int) -> dict:
+        usuario = self.usuario_repository.obtener_por_id(usuario_id)
+        if not usuario:
+            raise ValueError("Usuario no encontrado.")
+
+        if not usuario.activo:
+            raise PermissionError("Tu cuenta está desactivada. Contacta al laboratorista.")
+
+        return self.formato_datos_usuario(usuario)
+
+    def listar_usuarios(self) -> list:
+        usuarios = self.usuario_repository.listar_todos()
+        return [self.formato_datos_usuario(u) for u in usuarios]
