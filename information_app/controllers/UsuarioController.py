@@ -1,10 +1,10 @@
+
 from ..services.UsuarioServices import UsuarioServices
 
 from rest_framework.views     import APIView
 from rest_framework.response  import Response
-from rest_framework           import status
+from rest_framework           import request, status
 from django.shortcuts         import redirect
-
 
 class OAuthLoginView(APIView):
     authentication_classes = []
@@ -60,7 +60,18 @@ class TokenRefreshView(APIView):
     permission_classes     = []
 
     def post(self, request):
-        refresh = request.data.get('refresh')
+        try:
+            datos = request.data
+            if not isinstance(datos, dict):
+                raise ValueError
+        except Exception:
+            return Response(
+                {'error': 'El cuerpo debe ser un JSON válido con formato de objeto. '
+                          'Asegúrate de incluir el header Content-Type: application/json'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+  
+        refresh = datos.get('refresh')
         if not refresh:
             return Response(
                 {'error': 'Campo "refresh" requerido.'},
@@ -107,7 +118,6 @@ class RegistrarUsuarioView(APIView):
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
-
         if not service.es_usuario_laboratorista(usuario_login):
             return Response(
                 {'error': 'Solo los usuarios laboratoristas pueden registrar nuevos usuarios.'},
@@ -115,7 +125,18 @@ class RegistrarUsuarioView(APIView):
             )
 
         try:
-            usuario_nuevo = service.registrar_usuario(request.data)
+            datos = request.data
+            if not isinstance(datos, dict):
+                raise ValueError
+        except Exception:
+            return Response(
+                {'error': 'El cuerpo debe ser un JSON válido con formato de objeto. '
+                          'Asegúrate de incluir el header Content-Type: application/json'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            usuario_nuevo = service.registrar_usuario(datos)
             return Response(
                 {'mensaje': 'Usuario registrado exitosamente.', 'usuario': usuario_nuevo},
                 status=status.HTTP_201_CREATED,
@@ -131,28 +152,29 @@ class RegistrarUsuarioView(APIView):
 #################### DEBUG #################
 class RegistrarUsuarioDebugView(APIView):
     authentication_classes = []
-    permission_classes = []
+    permission_classes     = []
 
     def post(self, request):
-        service = UsuarioServices()
-
         try:
-            usuario = service.registrar_usuario(request.data)
-
+            datos = request.data
+            if not isinstance(datos, dict):
+                raise ValueError
+        except Exception:
             return Response(
-                {
-                    'mensaje': 'Usuario registrado exitosamente.',
-                    'usuario': usuario,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-
-        except ValueError as e:
-            return Response(
-                {'error': str(e)},
+                {'error': 'El cuerpo debe ser un JSON válido con formato de objeto. '
+                          'Asegúrate de incluir el header Content-Type: application/json'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        service = UsuarioServices()
+        try:
+            usuario = service.registrar_usuario(datos)
+            return Response(
+                {'mensaje': 'Usuario registrado exitosamente.', 'usuario': usuario},
+                status=status.HTTP_201_CREATED,
+            )
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             return Response(
                 {'error': 'Error interno. Contacta al soporte.'},
