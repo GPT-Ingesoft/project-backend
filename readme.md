@@ -7,11 +7,12 @@ El objetivo de este repositorio es proporcionar la infraestructura y lógica del
 
 ## Documentación Técnica
 
-| Documento                                               | Descripción                                                                           |
+| Documento | Descripción |
 |---|---|
-| [docs/backend_setup.md](./docs/backend_setup.md)        | Configuración de PostgreSQL, inicializacion de Django y realizar migraciones a Django |
-| [docs/backend_execute.md](./docs/backend_execute.md)    | Ejecución del backend                                                                 |
-| [docs/backend_methods.md](./docs/backend_methods.md)  | Metodos HTTP del backend                                                              |
+| [docs/docker-postgresql.md](./docs/docker-postgresql.md)  | Configuración de PostgreSQL                                   |
+| [docs/django-structure.md](./docs/django-structure.md)    | Configuración automática de Django                            |
+| [docs/backend-database.md](./docs/backend-database.md)    | Arquitectura del la base de datos y exportación de tablas     |
+| [docs/ejecutar-backend.md](./docs/ejecutar-backend.md)    | Ejecución del backend                                         |
 
 ## Lenguajes y Tecnologías:
 

@@ -1,5 +1,6 @@
 from django.db import models
 
+
 # =============================================================================
 # MÓDULO 2: Gestión de Usuarios y Control de Acceso
 # =============================================================================
@@ -14,6 +15,7 @@ class Usuario(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
+    contrasena = models.CharField(max_length=255)
     rol = models.CharField(max_length=50, choices=ROL_CHOICES, default='docente')
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
