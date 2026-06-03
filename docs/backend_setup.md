@@ -116,7 +116,6 @@ GRANT ALL ON SCHEMA public TO django_user;
 ```
 
 ---
-
 ## Etapa 2 — Entorno Virtual de Python
 
 El script verifica si el entorno virtual `venv-SysLab` existe:
@@ -136,6 +135,7 @@ En ambos casos se ejecuta `pip install -r requirements.txt` para mantener las de
 | psycopg | Conexión con PostgreSQL |
 | Django REST Framework | Construcción de APIs REST |
 | django-cors-headers | Configuración de políticas CORS |
+| django-environ | Lectura de variables de entorno desde `.env` |
 
 ---
 
@@ -209,6 +209,60 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 ```
+
+---
+
+## Autenticación (OAuth 2.0 y JWT)
+
+Esta configuración es requerida para el módulo de login mediante Google OAuth. Las credenciales se leen desde un archivo `.env` en la raíz del proyecto usando `django-environ`.
+
+### Archivo `.env`
+
+Crear el archivo `.env` en la raíz del proyecto con las siguientes variables:
+
+```env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/callback/google/
+```
+
+> Las credenciales de Google se obtienen desde [Google Cloud Console](https://console.cloud.google.com/) creando un proyecto y configurando las credenciales OAuth 2.0.
+
+### Configuración en `settings.py`
+
+```python
+import environ
+env = environ.Env()
+environ.Env.read_env()
+
+# ── Google OAuth ───────────────────────────────────────────────────────────────
+GOOGLE_CLIENT_ID     = env('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI  = env('GOOGLE_REDIRECT_URI')
+
+# ── DRF: sin autenticación global (JWT manual en cada endpoint) ───────────────
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES':     [],
+}
+
+# ── Cache para el state OAuth (anti-CSRF) — Redis en producción ───────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+```
+
+### Notas
+
+| Configuración | Descripción |
+|---|---|
+| `GOOGLE_CLIENT_ID / SECRET` | Credenciales de la aplicación OAuth registrada en Google Cloud |
+| `GOOGLE_REDIRECT_URI` | Debe coincidir exactamente con la URI configurada en Google Cloud Console |
+| `DEFAULT_AUTHENTICATION_CLASSES: []` | Desactiva la autenticación global de DRF; cada endpoint gestiona su propio JWT |
+| `DEFAULT_PERMISSION_CLASSES: []` | Desactiva los permisos globales de DRF; el control se aplica manualmente por vista |
+| `LocMemCache` | Cache en memoria local, válido para desarrollo. **En producción reemplazar por Redis** |
 
 ---
 
