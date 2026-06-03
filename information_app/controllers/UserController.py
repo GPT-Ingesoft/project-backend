@@ -1,5 +1,4 @@
-
-from ..services.UsuarioServices import UsuarioServices
+from ..services.UserServices import UserServices
 
 from rest_framework.views     import APIView
 from rest_framework.response  import Response
@@ -11,9 +10,9 @@ class OAuthLoginView(APIView):
     permission_classes     = []
 
     def get(self, request, provider):
-        service = UsuarioServices()
+        service = UserServices()
         try:
-            url = service.generar_url_oauth(provider)
+            url = service.generate_oauth_url(provider)
             return redirect(url)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -26,7 +25,7 @@ class OAuthCallbackView(APIView):
         error = request.GET.get('error')
         if error:
             return Response(
-                {'error': f'El proveedor rechazó el acceso: {error}'},
+                {'error': f'Provider denied access: {error}'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -35,14 +34,14 @@ class OAuthCallbackView(APIView):
 
         if not code or not state:
             return Response(
-                {'error': 'Faltan parámetros del callback (code, state).'},
+                {'error': 'Missing callback parameters (code, state).'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        service = UsuarioServices()
+        service = UserServices()
         try:
-            resultado = service.procesar_callback_oauth(provider, code, state)
-            return Response(resultado, status=status.HTTP_200_OK)
+            result = service.process_oauth_callback(provider, code, state)
+            return Response(result, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except PermissionError as e:
@@ -51,7 +50,7 @@ class OAuthCallbackView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
         except Exception:
             return Response(
-                {'error': 'Error interno. Contacta al soporte.'},
+                {'error': 'Internal error. Please contact support.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -61,32 +60,32 @@ class TokenRefreshView(APIView):
 
     def post(self, request):
         try:
-            datos = request.data
-            if not isinstance(datos, dict):
+            data = request.data
+            if not isinstance(data, dict):
                 raise ValueError
         except Exception:
             return Response(
-                {'error': 'El cuerpo debe ser un JSON válido con formato de objeto. '
-                          'Asegúrate de incluir el header Content-Type: application/json'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-  
-        refresh = datos.get('refresh')
-        if not refresh:
-            return Response(
-                {'error': 'Campo "refresh" requerido.'},
+                {'error': 'The request body must be a valid JSON object. '
+                          'Make sure to include the header Content-Type: application/json'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        service = UsuarioServices()
+        refresh = data.get('refresh')
+        if not refresh:
+            return Response(
+                {'error': 'Field "refresh" is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        service = UserServices()
         try:
-            resultado = service.renovar_token(refresh)
-            return Response(resultado, status=status.HTTP_200_OK)
+            result = service.refresh_token(refresh)
+            return Response(result, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception:
             return Response(
-                {'error': 'Error interno. Contacta al soporte.'},
+                {'error': 'Internal error. Please contact support.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -95,88 +94,88 @@ class MeView(APIView):
     permission_classes     = []
 
     def get(self, request):
-        service = UsuarioServices()
+        service = UserServices()
         try:
-            usuario = service.extraer_usuario_del_token(request)
+            user = service.extract_user_from_token(request)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(
-            UsuarioServices.formato_datos_usuario(usuario),
+            UserServices.format_user_data(user),
             status=status.HTTP_200_OK,
         )
 
-class RegistrarUsuarioView(APIView):
+class RegisterUserView(APIView):
     authentication_classes = []
     permission_classes     = []
 
     def post(self, request):
-        service = UsuarioServices()
+        service = UserServices()
 
         try:
-            usuario_login = service.extraer_usuario_del_token(request)
+            login_user = service.extract_user_from_token(request)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if not service.es_usuario_laboratorista(usuario_login):
+        if not service.is_lab_technician(login_user):
             return Response(
-                {'error': 'Solo los usuarios laboratoristas pueden registrar nuevos usuarios.'},
+                {'error': 'Only lab technician users can register new users.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
-            datos = request.data
-            if not isinstance(datos, dict):
+            data = request.data
+            if not isinstance(data, dict):
                 raise ValueError
         except Exception:
             return Response(
-                {'error': 'El cuerpo debe ser un JSON válido con formato de objeto. '
-                          'Asegúrate de incluir el header Content-Type: application/json'},
+                {'error': 'The request body must be a valid JSON object. '
+                          'Make sure to include the header Content-Type: application/json'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            usuario_nuevo = service.registrar_usuario(datos)
+            new_user = service.register_user(data)
             return Response(
-                {'mensaje': 'Usuario registrado exitosamente.', 'usuario': usuario_nuevo},
+                {'message': 'User registered successfully.', 'user': new_user},
                 status=status.HTTP_201_CREATED,
             )
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             return Response(
-                {'error': 'Error interno. Contacta al soporte.'},
+                {'error': 'Internal error. Please contact support.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 #################### DEBUG #################
-class RegistrarUsuarioDebugView(APIView):
+class RegisterUserDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
     def post(self, request):
         try:
-            datos = request.data
-            if not isinstance(datos, dict):
+            data = request.data
+            if not isinstance(data, dict):
                 raise ValueError
         except Exception:
             return Response(
-                {'error': 'El cuerpo debe ser un JSON válido con formato de objeto. '
-                          'Asegúrate de incluir el header Content-Type: application/json'},
+                {'error': 'The request body must be a valid JSON object. '
+                          'Make sure to include the header Content-Type: application/json'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        service = UsuarioServices()
+        service = UserServices()
         try:
-            usuario = service.registrar_usuario(datos)
+            user = service.register_user(data)
             return Response(
-                {'mensaje': 'Usuario registrado exitosamente.', 'usuario': usuario},
+                {'message': 'User registered successfully.', 'user': user},
                 status=status.HTTP_201_CREATED,
             )
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             return Response(
-                {'error': 'Error interno. Contacta al soporte.'},
+                {'error': 'Internal error. Please contact support.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
