@@ -132,8 +132,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 import environ
+from pathlib import Path
 env = environ.Env()
-environ.Env.read_env()
+environ.Env.read_env(Path(__file__).resolve().parent.parent / '.env')
 
 # ── Google OAuth ───────────────────────────────────────────────────────────────
 GOOGLE_CLIENT_ID     = env('GOOGLE_CLIENT_ID')
