@@ -263,3 +263,37 @@ class UserServices:
             'exp':     datetime.now(tz=timezone.utc) + REFRESH_LIFETIME,
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm=TOKEN_ALGORITHM)
+    
+    # ── Module -> User management ─────────────────────────────────────────
+    def assign_role(self, user_id: int, role: str) -> dict:
+        if role not in VALID_ROLES:
+            raise ValueError(f"Role '{role}' is not valid. Allowed roles: {', '.join(VALID_ROLES)}.")
+
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            raise ValueError("User not found.")
+
+        user = self.user_repository.update_role(user, role)
+        return self.format_user_data(user)
+
+    def change_status(self, user_id: int, active: bool) -> dict:
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            raise ValueError("User not found.")
+
+        user = self.user_repository.update_status(user, active)
+        return self.format_user_data(user)
+
+    def verify_access(self, user_id: int) -> dict:
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            raise ValueError("User not found.")
+
+        if not user.activo:
+            raise PermissionError("Your account is deactivated. Please contact the lab technician.")
+
+        return self.format_user_data(user)
+
+    def list_users(self) -> list:
+        users = self.user_repository.get_all()
+        return [self.format_user_data(u) for u in users]
