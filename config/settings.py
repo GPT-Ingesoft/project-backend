@@ -130,3 +130,26 @@ STATIC_URL = 'static/'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
+
+import environ
+from pathlib import Path
+env = environ.Env()
+environ.Env.read_env(Path(__file__).resolve().parent.parent / '.env')
+
+# ── Google OAuth ───────────────────────────────────────────────────────────────
+GOOGLE_CLIENT_ID     = env('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI  = env('GOOGLE_REDIRECT_URI')
+
+# ── DRF: sin autenticación global (JWT manual en cada endpoint) ───────────────
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES':     [],
+}
+
+# ── Cache para el state OAuth (anti-CSRF) — Redis en producción ───────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
