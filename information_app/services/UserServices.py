@@ -10,7 +10,6 @@ import requests
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 
-# Role values match the DB definitions in models.py (kept in Spanish)
 VALID_ROLES        = {'docente', 'laboratorista', 'tecnico'}
 BASE_FIELDS        = {'name', 'email', 'role'}
 TECHNICIAN_FIELDS  = {'specialty', 'contact'}
@@ -79,7 +78,6 @@ class UserServices:
 
     @staticmethod
     def format_user_data(user) -> dict:
-        # Maps Spanish model field names to English response keys
         return {
             'id':         user.id,
             'name':       user.nombre,
