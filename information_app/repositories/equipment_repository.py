@@ -1,4 +1,4 @@
-from information_app.models import Equipo
+from information_app.models import Equipo, Intervencion
 from django.utils import timezone
 
 class EquipmentRepository:
@@ -42,3 +42,28 @@ class EquipmentRepository:
         equipment.criticidad = criticality
         equipment.save()
         return equipment
+
+    def get_equipment_with_history(self, equipment_id: int):
+        return (
+            Equipo.objects
+            .prefetch_related(
+                'solicitudes',
+                'solicitudes__intervenciones',
+                'solicitudes__intervenciones__tecnico',
+                'solicitudes__intervenciones__tecnico__usuario',
+                'solicitudes__asignaciones',
+                'solicitudes__asignaciones__tecnico',
+                'solicitudes__asignaciones__tecnico__usuario',
+                'solicitudes__historial_estados',
+            )
+            .filter(id=equipment_id)
+            .first()
+        )
+
+    def create_intervention(self, solicitud, tecnico, descripcion: str, observaciones: str = None) -> Intervencion:
+        return Intervencion.objects.create(
+            solicitud=solicitud,
+            tecnico=tecnico,
+            descripcion=descripcion,
+            observaciones=observaciones
+        )

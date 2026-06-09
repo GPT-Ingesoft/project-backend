@@ -86,6 +86,93 @@ class EquipmentServices:
             'created_at':       equipment.fecha_creacion.isoformat(),
         }
 
+    @staticmethod
+    def format_technician_data(technician) -> dict:
+        if not technician:
+            return None
+
+        return {
+            'id': technician.usuario.id,
+            'name': technician.usuario.nombre,
+            'email': technician.usuario.correo,
+            'specialty': technician.especialidad,
+            'contact': technician.contacto,
+        }
+
+    @staticmethod
+    def format_status_history_data(status_history) -> dict:
+        return {
+            'id': status_history.id,
+            'previous_status': status_history.estado_anterior,
+            'new_status': status_history.estado_nuevo,
+            'reason': status_history.motivo,
+            'changed_at': status_history.fecha_cambio.isoformat(),
+            'changed_by': {
+                'id': status_history.usuario.id,
+                'name': status_history.usuario.nombre,
+                'email': status_history.usuario.correo,
+            } if status_history.usuario else None,
+        }
+
+    @staticmethod
+    def format_intervention_data(intervention) -> dict:
+        return {
+            'id': intervention.id,
+            'description': intervention.descripcion,
+            'observations': intervention.observaciones,
+            'performed_at': intervention.fecha_intervencion.isoformat(),
+            'technician': EquipmentServices.format_technician_data(
+                intervention.tecnico
+            ),
+        }
+
+    @staticmethod
+    def format_request_history_data(request) -> dict:
+        return {
+            'id': request.id,
+            'description': request.descripcion,
+            'priority': request.prioridad,
+            'status': request.estado,
+            'created_at': request.fecha_creacion.isoformat(),
+            'scheduled_attention': {
+                'id': request.horario_agendado.id,
+                'laboratory': request.horario_agendado.laboratorio,
+                'day': request.horario_agendado.dia,
+                'start_time': request.horario_agendado.hora_inicio.isoformat(),
+                'end_time': request.horario_agendado.hora_fin.isoformat(),
+            } if request.horario_agendado else None,
+            'assigned_technicians': [
+                EquipmentServices.format_technician_data(
+                    assignment.tecnico
+                )
+                for assignment in request.asignaciones.all()
+            ],
+            'status_history': [
+                EquipmentServices.format_status_history_data(status_change)
+                for status_change in request.historial_estados.all()
+            ],
+            'interventions': [
+                EquipmentServices.format_intervention_data(intervention)
+                for intervention in request.intervenciones.all()
+            ],
+        }
+
+    def get_equipment_history(self, equipment_id: int) -> dict:
+        equipment = self.equipment_repository.get_equipment_with_history(
+            equipment_id
+        )
+
+        if not equipment:
+            raise ValueError("Equipment not found.")
+
+        return {
+            'equipment': self.format_equipment_data(equipment),
+            'maintenance_requests': [
+                self.format_request_history_data(request)
+                for request in equipment.solicitudes.all()
+            ],
+        }
+
     def list_equipment(self) -> list:
         equipment = self.equipment_repository.get_all()
         return [self.format_equipment_data(e) for e in equipment]

@@ -18,6 +18,7 @@ from information_app.controllers.user_controller import (
 from information_app.controllers.equipment_controller import (
     EquipmentView,
     EquipmentDetailView,
+    EquipmentHistoryView,
     EquipmentDebugView,
     RegisterEquipmentView,
     RegisterEquipmentDebugView,
@@ -43,6 +44,7 @@ urlpatterns = [
     path('equipment/',                                      EquipmentView.as_view(),        name='list-equipment'),
     path('equipment/register/',                             RegisterEquipmentView.as_view(),name='register-equipment'),
     path('equipment/<int:equipment_id>/availability/',      EquipmentDetailView.as_view(),  name='equipment-availability'),
+    path('equipment/<int:equipment_id>/history/',           EquipmentHistoryView.as_view(), name='equipment-history'),
     path('equipment/<int:equipment_id>/decommission/',      EquipmentDetailView.as_view(),  name='equipment-decommission'),
     path('equipment/<int:equipment_id>/criticality/',       EquipmentDetailView.as_view(),  name='equipment-criticality'),
 
