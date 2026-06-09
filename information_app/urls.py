@@ -17,6 +17,7 @@ from .controllers.UserController import (
 from .controllers.EquipmentController import (
     EquipmentView,
     EquipmentDetailView,
+    EquipmentHistoryView,
     EquipmentDebugView,
 )
 
@@ -44,6 +45,7 @@ urlpatterns = [
     # ── Equipment management ───────────────────────────────────────────────────
     path('equipment/',                                      EquipmentView.as_view(),        name='list-equipment'),
     path('equipment/<int:equipment_id>/availability/',      EquipmentDetailView.as_view(),  name='equipment-availability'),
+    path('equipment/<int:equipment_id>/history/',           EquipmentHistoryView.as_view(), name='equipment-history'),
     path('equipment/<int:equipment_id>/decommission/',      EquipmentDetailView.as_view(),  name='equipment-decommission'),
     path('equipment/<int:equipment_id>/criticality/',       EquipmentDetailView.as_view(),  name='equipment-criticality'),
 

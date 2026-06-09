@@ -227,6 +227,32 @@ class Asignacion(models.Model):
     def __str__(self):
         return f"{self.tecnico} → Solicitud #{self.solicitud.id}"
 
+class Intervencion(models.Model):
+    id = models.AutoField(primary_key=True)
+    descripcion = models.TextField(help_text='Descripción de la intervención realizada al equipo.')
+    observaciones = models.TextField(null=True, blank=True)
+    fecha_intervencion = models.DateTimeField(auto_now_add=True)
+
+    solicitud = models.ForeignKey(
+        Solicitud,
+        on_delete=models.CASCADE,
+        related_name='intervenciones'
+    )
+
+    tecnico = models.ForeignKey(
+        Tecnico,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='intervenciones'
+    )
+
+    class Meta:
+        db_table = 'intervencion'
+        ordering = ['-fecha_intervencion']
+
+    def __str__(self):
+        return f"Intervención #{self.id} — Solicitud #{self.solicitud.id}"
+    
 # =============================================================================
 # MÓDULO 4: Notificaciones del Sistema
 # =============================================================================
