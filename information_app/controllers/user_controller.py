@@ -109,6 +109,57 @@ class MeView(APIView):
 
 #################### Register User ####################
 
+class UpdateProfileView(APIView):
+    authentication_classes = []
+    permission_classes     = []
+
+    def patch(self, request):
+        service = UserServices()
+
+        try:
+            user = service.extract_user_from_token(request)
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            data = request.data
+            if not isinstance(data, dict):
+                raise ValueError
+        except Exception:
+            return Response(
+                {
+                    'error': 'The request body must be a valid JSON object. '
+                             'Make sure to include the header Content-Type: application/json'
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            updated_user = service.update_own_profile(user, data)
+
+            return Response(
+                {
+                    'message': 'Profile updated successfully.',
+                    'user': updated_user,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception:
+            return Response(
+                {'error': 'Internal error. Please contact support.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
 class RegisterUserView(APIView):
     authentication_classes = []
     permission_classes     = []
