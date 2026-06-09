@@ -39,3 +39,12 @@ class UserRepository:
         user.activo = active
         user.save()
         return user
+
+    def update_profile(self, user: Usuario, name: str, email: str) -> Usuario:
+        user.nombre = name
+        user.correo = email
+        user.save(update_fields=['nombre', 'correo'])
+        return user
+
+    def email_exists_for_other_user(self, email: str, user_id: int) -> bool:
+        return Usuario.objects.filter(correo=email).exclude(id=user_id).exists()

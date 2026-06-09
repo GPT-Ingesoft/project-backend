@@ -7,6 +7,7 @@ from django.core.cache import cache
 import jwt
 import secrets
 import requests
+import re
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +16,7 @@ VALID_ROLES        = {'docente', 'laboratorista', 'tecnico'}
 BASE_FIELDS        = {'name', 'email', 'role'}
 TECHNICIAN_FIELDS  = {'specialty', 'contact'}
 MIN_NAME_LENGTH    = 2
+EMAIL_REGEX = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 
 ACCESS_LIFETIME  = timedelta(hours=1)
 REFRESH_LIFETIME = timedelta(days=7)
@@ -88,6 +90,47 @@ class UserServices:
             'active':     user.activo,
             'created_at': user.fecha_creacion.isoformat(),
         }
+
+    @staticmethod
+    def validate_profile_data(data: dict) -> None:
+        UserServices.validate_user_data(data, ['name', 'email'])
+
+        name = data['name'].strip()
+        email = data['email'].strip().lower()
+
+        if len(name) < MIN_NAME_LENGTH:
+            raise ValueError(
+                f"Name must be at least {MIN_NAME_LENGTH} characters long."
+            )
+
+        if not re.match(EMAIL_REGEX, email):
+            raise ValueError(
+                "Email format is invalid."
+            )
+
+    @transaction.atomic
+    def update_own_profile(self, user, data: dict) -> dict:
+
+        self.validate_profile_data(data)
+
+        name = data['name'].strip()
+        email = data['email'].strip().lower()
+
+        if self.user_repository.email_exists_for_other_user(
+            email,
+            user.id
+        ):
+            raise ValueError(
+                f"Email '{email}' is already registered."
+            )
+
+        user = self.user_repository.update_profile(
+            user=user,
+            name=name,
+            email=email
+        )
+
+        return self.format_user_data(user)
 
     @staticmethod
     def is_lab_technician(user) -> bool:
