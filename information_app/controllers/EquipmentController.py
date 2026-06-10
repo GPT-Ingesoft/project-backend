@@ -1,5 +1,5 @@
 from ..services.EquipmentServices import EquipmentServices
-from ..services.UserServices import UserServices
+from ..services.user_services import UserServices
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
