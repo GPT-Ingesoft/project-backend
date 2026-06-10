@@ -1,16 +1,16 @@
-from ..repositories.UserRepository import UserRepository
+import secrets
+from urllib.parse import urlencode
+from datetime import datetime, timedelta, timezone
+
+from repositories.user_repository import UserRepository
 
 from django.db import transaction
 from django.conf import settings
 from django.core.cache import cache
 
 import jwt
-import secrets
 import requests
-from urllib.parse import urlencode
-from datetime import datetime, timedelta, timezone
 
-# Role values match the DB definitions in models.py (kept in Spanish)
 VALID_ROLES        = {'docente', 'laboratorista', 'tecnico'}
 BASE_FIELDS        = {'name', 'email', 'role'}
 TECHNICIAN_FIELDS  = {'specialty', 'contact'}
@@ -79,7 +79,6 @@ class UserServices:
 
     @staticmethod
     def format_user_data(user) -> dict:
-        # Maps Spanish model field names to English response keys
         return {
             'id':         user.id,
             'name':       user.nombre,
@@ -175,8 +174,8 @@ class UserServices:
                 'grant_type':    'authorization_code',
             }, timeout=RESPONSE_TIMEOUT)
             token_resp.raise_for_status()
-        except requests.RequestException:
-            raise ConnectionError('Could not communicate with Google for code exchange.')
+        except requests.RequestException as exc:
+            raise ConnectionError('Could not communicate with Google for code exchange.') from exc
 
         try:
             info_resp = requests.get(
@@ -186,8 +185,8 @@ class UserServices:
             )
             info_resp.raise_for_status()
             email = info_resp.json().get('email', '').strip().lower()
-        except requests.RequestException:
-            raise ConnectionError('Could not retrieve user information from Google.')
+        except requests.RequestException as exc:
+            raise ConnectionError('Could not retrieve user information from Google.') from exc
 
         if not email:
             raise ValueError('Google did not return an email address.')
@@ -205,10 +204,10 @@ class UserServices:
 
         try:
             payload = self.validate_token(token, token_type='access')
-        except jwt.ExpiredSignatureError:
-            raise ValueError('Token expired. Renew it at POST /auth/refresh/')
-        except jwt.InvalidTokenError:
-            raise ValueError('Invalid token.')
+        except jwt.ExpiredSignatureError as exc1:
+            raise ValueError('Token expired. Renew it at POST /auth/refresh/') from exc1
+        except jwt.InvalidTokenError as exc2:
+            raise ValueError('Invalid token.') from exc2
 
         user = self.user_repository.find_active_user_by_id(payload['user_id'])
         if not user:
@@ -219,10 +218,10 @@ class UserServices:
     def refresh_token(self, refresh_token: str) -> dict:
         try:
             payload = self.validate_token(refresh_token, token_type='refresh')
-        except jwt.ExpiredSignatureError:
-            raise ValueError('Refresh token expired. Please log in again.')
-        except jwt.InvalidTokenError:
-            raise ValueError('Invalid refresh token.')
+        except jwt.ExpiredSignatureError as exc1:
+            raise ValueError('Refresh token expired. Please log in again.') from exc1
+        except jwt.InvalidTokenError as exc2:
+            raise ValueError('Invalid refresh token.') from exc2
 
         user = self.user_repository.find_active_user_by_id(payload['user_id'])
         if not user:
@@ -263,7 +262,7 @@ class UserServices:
             'exp':     datetime.now(tz=timezone.utc) + REFRESH_LIFETIME,
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm=TOKEN_ALGORITHM)
-    
+
     # ── Module -> User management ─────────────────────────────────────────
     def assign_role(self, user_id: int, role: str) -> dict:
         if role not in VALID_ROLES:

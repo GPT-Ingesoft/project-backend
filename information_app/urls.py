@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .controllers.UserController import (
+from .controllers.user_controller import (
     OAuthLoginView,
     OAuthCallbackView,
     RegisterUserDebugView,
@@ -29,12 +29,6 @@ urlpatterns = [
     path('users/<int:user_id>/role/',     AssignRoleView.as_view(),        name='assign-role'),
     path('users/<int:user_id>/status/',   ChangeStatusView.as_view(),      name='change-status'),
 
-    #################### DEBUG #######################
-    path('users/register_debug/',                       RegisterUserDebugView.as_view(),  name='register-user-debug'),
-    path('users/debug/',                                ListUsersDebugView.as_view(),     name='list-users-debug'),
-    path('users/<int:user_id>/role_debug/',             AssignRoleDebugView.as_view(),    name='assign-role-debug'),
-    path('users/<int:user_id>/status_debug/',           ChangeStatusDebugView.as_view(),  name='change-status-debug'),
-
     # ── OAuth 2.0 Authentication ───────────────────────────────────────────────
     path('auth/login/<str:provider>/',    OAuthLoginView.as_view(),        name='oauth-login'),
     path('auth/callback/<str:provider>/', OAuthCallbackView.as_view(),     name='oauth-callback'),
@@ -48,6 +42,11 @@ urlpatterns = [
     path('equipment/<int:equipment_id>/criticality/',       EquipmentDetailView.as_view(),  name='equipment-criticality'),
 
     #################### DEBUG #######################
+    path('users/register_debug/',                       RegisterUserDebugView.as_view(),  name='register-user-debug'),
+    path('users/debug/',                                ListUsersDebugView.as_view(),     name='list-users-debug'),
+    path('users/<int:user_id>/role_debug/',             AssignRoleDebugView.as_view(),    name='assign-role-debug'),
+    path('users/<int:user_id>/status_debug/',           ChangeStatusDebugView.as_view(),  name='change-status-debug'),
+
     path('equipment/debug/',                                        EquipmentDebugView.as_view(),  name='list-equipment-debug'),
     path('equipment/<int:equipment_id>/debug/<str:action>/',        EquipmentDebugView.as_view(),  name='equipment-action-debug'),
 ]
