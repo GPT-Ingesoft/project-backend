@@ -9,7 +9,6 @@ information_app/__pycache__//migrations/__pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pylintrc
 
 # Virtual environments
 venv/
