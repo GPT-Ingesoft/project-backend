@@ -141,6 +141,8 @@ class EquipmentHistoryView(APIView):
                 status=HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+#################### DEBUG ####################
+
 class EquipmentDebugView(APIView):
 
     def get(self, request):

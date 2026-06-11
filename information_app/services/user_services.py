@@ -284,7 +284,6 @@ class UserServices:
 
     @staticmethod
     def generate_access_token(user) -> str:
-        # Maps Spanish model fields to English JWT claim names
         payload = {
             'user_id': user.id,
             'email':   user.correo,
