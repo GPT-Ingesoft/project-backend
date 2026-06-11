@@ -84,6 +84,27 @@ class EquipmentDetailView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
+class EquipmentHistoryView(APIView):
+
+    # ── GET /api/equipment/<id>/history/ ───────────────────────────────────────
+    def get(self, request, equipment_id):
+        service = EquipmentServices()
+
+        try:
+            history = service.get_equipment_history(equipment_id)
+            return Response(history, status=HTTP_200_OK)
+
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=HTTP_400_BAD_REQUEST
+            )
+
+        except Exception:
+            return Response(
+                {'error': 'Internal error. Please contact support.'},
+                status=HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 # ── Debug views (no authentication required) ──────────────────────────────────
 class EquipmentDebugView(APIView):
