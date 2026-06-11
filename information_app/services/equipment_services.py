@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from repositories.equipment_repository import EquipmentRepository
+from information_app.repositories.equipment_repository import EquipmentRepository
 
 VALID_CRITICALITIES = {'alta', 'media', 'baja'}
 REQUIRED_EQUIPMENT_FIELDS = {'name', 'inventory_code', 'model', 'brand', 'serial_number', 'location'}

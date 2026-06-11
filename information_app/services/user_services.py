@@ -2,7 +2,7 @@ import secrets
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 
-from repositories.user_repository import UserRepository
+from information_app.repositories.user_repository import UserRepository
 
 from django.db import transaction
 from django.conf import settings

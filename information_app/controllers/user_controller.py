@@ -1,9 +1,11 @@
-from services.user_services import UserServices
+from information_app.services.user_services import UserServices
 
 from rest_framework.views     import APIView
 from rest_framework.response  import Response
 from rest_framework           import status
 from django.shortcuts         import redirect
+
+#################### Auth ####################
 
 class OAuthLoginView(APIView):
     authentication_classes = []
@@ -105,6 +107,8 @@ class MeView(APIView):
             status=status.HTTP_200_OK,
         )
 
+#################### Register User ####################
+
 class RegisterUserView(APIView):
     authentication_classes = []
     permission_classes     = []
@@ -176,7 +180,6 @@ class AssignRoleView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class ChangeStatusView(APIView):
     authentication_classes = []
     permission_classes     = []
@@ -207,7 +210,6 @@ class ChangeStatusView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class ListUsersView(APIView):
     authentication_classes = []
     permission_classes     = []
@@ -227,7 +229,6 @@ class ListUsersView(APIView):
             return Response({'users': users}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 #################### DEBUG ####################
 
@@ -280,7 +281,6 @@ class AssignRoleDebugView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class ChangeStatusDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
@@ -302,7 +302,6 @@ class ChangeStatusDebugView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class ListUsersDebugView(APIView):
     authentication_classes = []

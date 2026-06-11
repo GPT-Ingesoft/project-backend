@@ -24,25 +24,26 @@ create_modules(
     "django.core",
     "django.core.cache",
 
-    "repositories",
-    "repositories.equipment_repository",
+    "information_app",
+    "information_app.repositories",
+    "information_app.repositories.equipment_repository",
 )
 
 sys.modules["django.conf"].settings    = _Settings
 sys.modules["django.db"].transaction = _Transaction
 sys.modules["django.core.cache"].cache = MagicMock()
-sys.modules["repositories.equipment_repository"].EquipmentRepository = MagicMock
+sys.modules["information_app.repositories.equipment_repository"].EquipmentRepository = MagicMock
 
 service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" /"services" / "equipment_services.py"
 
 spec   = importlib.util.spec_from_file_location(
-    "services.equipment_services",
+    "information_app.services.equipment_services",
     service_path,
 )
 
 module = importlib.util.module_from_spec(spec)
-module.__package__ = "services"
-sys.modules["services.equipment_services"] = module
+module.__package__ = "information_app.services"
+sys.modules["information_app.services.equipment_services"] = module
 spec.loader.exec_module(module)
 EquipmentServices = module.EquipmentServices
 

@@ -1,4 +1,4 @@
-from models import Equipo
+from information_app.models import Equipo
 from django.utils import timezone
 
 class EquipmentRepository:

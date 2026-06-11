@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .controllers.user_controller import (
+from information_app.controllers.user_controller import (
     OAuthLoginView,
     OAuthCallbackView,
     RegisterUserDebugView,
@@ -14,7 +14,7 @@ from .controllers.user_controller import (
     ChangeStatusDebugView,
     ListUsersDebugView,
 )
-from .controllers.equipment_controller import (
+from information_app.controllers.equipment_controller import (
     EquipmentView,
     EquipmentDetailView,
     EquipmentDebugView,
