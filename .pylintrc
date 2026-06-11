@@ -1,0 +1,14 @@
+[MAIN]
+init-hook=
+    import os,sys; sys.path.insert(0, os.getcwd())
+
+load-plugins=pylint_django
+
+[django]
+django-settings-module=config.settings
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring

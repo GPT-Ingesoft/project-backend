@@ -1,8 +1,8 @@
-from ..services.UserServices import UserServices
+from services.user_services import UserServices
 
 from rest_framework.views     import APIView
 from rest_framework.response  import Response
-from rest_framework           import request, status
+from rest_framework           import status
 from django.shortcuts         import redirect
 
 class OAuthLoginView(APIView):
@@ -199,38 +199,6 @@ class RegisterUserView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-#################### DEBUG #################
-class RegisterUserDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
-    def post(self, request):
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        service = UserServices()
-        try:
-            user = service.register_user(data)
-            return Response(
-                {'message': 'User registered successfully.', 'user': user},
-                status=status.HTTP_201_CREATED,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-        
 #################### User management ####################
 
 class AssignRoleView(APIView):
@@ -238,7 +206,6 @@ class AssignRoleView(APIView):
     permission_classes     = []
 
     def patch(self, request, user_id):
-        # RF_19 - Assigns a role to a user (requires lab technician)
         service = UserServices()
         try:
             logged_user = service.extract_user_from_token(request)
@@ -266,7 +233,6 @@ class ChangeStatusView(APIView):
     permission_classes     = []
 
     def patch(self, request, user_id):
-        # RF_20 - Activates or deactivates a user account (requires lab technician)
         service = UserServices()
         try:
             logged_user = service.extract_user_from_token(request)
@@ -298,7 +264,6 @@ class ListUsersView(APIView):
     permission_classes     = []
 
     def get(self, request):
-        # Returns all users (requires lab technician)
         service = UserServices()
         try:
             logged_user = service.extract_user_from_token(request)
@@ -317,12 +282,42 @@ class ListUsersView(APIView):
 
 #################### DEBUG ####################
 
+class RegisterUserDebugView(APIView):
+    authentication_classes = []
+    permission_classes     = []
+
+    def post(self, request):
+        try:
+            data = request.data
+            if not isinstance(data, dict):
+                raise ValueError
+        except Exception:
+            return Response(
+                {'error': 'The request body must be a valid JSON object. '
+                          'Make sure to include the header Content-Type: application/json'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        service = UserServices()
+        try:
+            user = service.register_user(data)
+            return Response(
+                {'message': 'User registered successfully.', 'user': user},
+                status=status.HTTP_201_CREATED,
+            )
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response(
+                {'error': 'Internal error. Please contact support.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
 class AssignRoleDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
     def patch(self, request, user_id):
-        # Debug - RF_19 without authentication
         role = request.data.get('role', '').strip().lower()
         if not role:
             return Response({'error': "Field 'role' is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -342,7 +337,6 @@ class ChangeStatusDebugView(APIView):
     permission_classes     = []
 
     def patch(self, request, user_id):
-        # Debug - RF_20 without authentication
         active = request.data.get('active')
         if active is None:
             return Response({'error': "Field 'active' is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -366,7 +360,6 @@ class ListUsersDebugView(APIView):
     permission_classes     = []
 
     def get(self, request):
-        # Debug - List all users without authentication
         service = UserServices()
         try:
             users = service.list_users()
