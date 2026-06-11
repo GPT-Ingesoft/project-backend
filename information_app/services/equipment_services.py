@@ -1,16 +1,76 @@
-from ..repositories.EquipmentRepository import EquipmentRepository
+from django.db import transaction
 
-# Criticality values match the DB definitions in models.py (kept in Spanish)
+from information_app.repositories.equipment_repository import EquipmentRepository
+
 VALID_CRITICALITIES = {'alta', 'media', 'baja'}
+REQUIRED_EQUIPMENT_FIELDS = {'name', 'inventory_code', 'model', 'brand', 'serial_number', 'location'}
+VALID_STATUSES           = {'operativo', 'en_mantenimiento', 'fuera_de_servicio'}
 
 class EquipmentServices:
     def __init__(self):
         self.equipment_repository = EquipmentRepository()
 
+    # ── Module -> Equipment registration ────────────────────────────────────────────
+    @transaction.atomic
+    def register_equipment(self, data: dict) -> dict:
+        self.validate_equipment_data(data, REQUIRED_EQUIPMENT_FIELDS)
+
+        name           = data['name'].strip()
+        inventory_code = data['inventory_code'].strip()
+        model          = data['model'].strip()
+        brand          = data['brand'].strip()
+        serial_number  = data['serial_number'].strip()
+        location       = data['location'].strip()
+        status         = data.get('status', 'operativo').strip().lower()
+        criticality    = data.get('criticality', 'media').strip().lower()
+
+        if status not in VALID_STATUSES:
+            raise ValueError(
+                f"Status '{status}' is not valid. "
+                f"Allowed values: {', '.join(sorted(VALID_STATUSES))}."
+            )
+
+        if criticality not in VALID_CRITICALITIES:
+            raise ValueError(
+                f"Criticality '{criticality}' is not valid. "
+                f"Allowed values: {', '.join(sorted(VALID_CRITICALITIES))}."
+            )
+
+        if self.equipment_repository.inventory_code_exists(inventory_code):
+            raise ValueError(
+                f"Inventory code '{inventory_code}' is already registered. "
+                "Please use a different code."
+            )
+
+        if self.equipment_repository.serial_number_exists(serial_number):
+            raise ValueError(
+                f"Serial number '{serial_number}' is already registered. "
+                "Please verify the serial number."
+            )
+
+        equipment = self.equipment_repository.create(
+                name=name,
+                inventory_code=inventory_code,
+                model=model,
+                brand=brand,
+                serial_number=serial_number,
+                location=location,
+                status=status,
+                criticality=criticality,
+            )
+
+        return self.format_equipment_data(equipment)
+
+    @staticmethod
+    def validate_equipment_data(data: dict, fields: list) -> None:
+        for field in fields:
+            value = data.get(field)
+            if value is None or str(value).strip() == '':
+                raise ValueError(f"Field '{field}' is required and cannot be empty.")
+
     # ── Module -> Equipment management ────────────────────────────────────────────────
     @staticmethod
     def format_equipment_data(equipment) -> dict:
-        # Maps Spanish model field names to English response keys
         return {
             'id':               equipment.id,
             'name':             equipment.nombre,

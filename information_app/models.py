@@ -252,7 +252,7 @@ class Intervencion(models.Model):
 
     def __str__(self):
         return f"Intervención #{self.id} — Solicitud #{self.solicitud.id}"
-    
+
 # =============================================================================
 # MÓDULO 4: Notificaciones del Sistema
 # =============================================================================
