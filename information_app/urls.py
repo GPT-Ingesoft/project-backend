@@ -6,6 +6,7 @@ from .controllers.user_controller import (
     RegisterUserDebugView,
     TokenRefreshView,
     MeView,
+    UpdateProfileView,
     RegisterUserView,
     AssignRoleView,
     ChangeStatusView,
@@ -34,6 +35,7 @@ urlpatterns = [
     path('auth/callback/<str:provider>/', OAuthCallbackView.as_view(),     name='oauth-callback'),
     path('auth/refresh/',                 TokenRefreshView.as_view(),      name='token-refresh'),
     path('auth/me/',                      MeView.as_view(),                name='auth-me'),
+    path('auth/me/profile/',              UpdateProfileView.as_view(),     name='update-profile'),
 
     # ── Equipment management ───────────────────────────────────────────────────
     path('equipment/',                                      EquipmentView.as_view(),        name='list-equipment'),
