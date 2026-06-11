@@ -1,7 +1,7 @@
 # SysLab - Backend
-[![Contributors](https://img.shields.io/github/contributors/GPT-Ingesoft/project-backend?color=602172)](https://github.com/ShryhakAkizuki/Radar_IA/graphs/contributors)
+[![Contributors](https://img.shields.io/github/contributors/GPT-Ingesoft/project-backend?color=602172)](https://github.com/GPT-Ingesoft/project-backend/graphs/contributors?from=28%2F2%2F2026)
 ![GitHub language count](https://img.shields.io/github/languages/count/GPT-Ingesoft/project-backend?color=EE5310)
-[![GitHub last commit](https://img.shields.io/github/last-commit/GPT-Ingesoft/project-backend?color=144fcd)](https://github.com/ShryhakAkizuki/Radar_IA/graphs/commit-activity)
+[![GitHub last commit](https://img.shields.io/github/last-commit/GPT-Ingesoft/project-backend?color=144fcd)](https://github.com/GPT-Ingesoft/project-backend/graphs/commit-activity)
 
 El objetivo de este repositorio es proporcionar la infraestructura y lógica del backend del sistema SysLab, utilizando Django y PostgreSQL
 

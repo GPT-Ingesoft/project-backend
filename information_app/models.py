@@ -22,13 +22,13 @@ class Usuario(models.Model):
         db_table = 'usuario'
 
     def __str__(self):
-        return f"{self.nombre} ({self.get_rol_display()})"
+        return f"{self.nombre} ({self.rol})"
 
 
 class Tecnico(models.Model):
     especialidad = models.CharField(max_length=100)
     contacto = models.CharField(max_length=100)
-    
+
     usuario = models.OneToOneField(
         Usuario,
         on_delete=models.CASCADE,
@@ -51,7 +51,7 @@ class Equipo(models.Model):
         ('operativo', 'Operativo'),
         ('en_mantenimiento', 'En Mantenimiento'),
         ('fuera_de_servicio', 'Fuera de Servicio'),
-        ('dado_de_baja', 'Dado de Baja'),  
+        ('dado_de_baja', 'Dado de Baja'),
     ]
 
     CRITICIDAD_CHOICES = [
@@ -114,8 +114,8 @@ class Solicitud(models.Model):
     ]
 
     ESTADO_CHOICES = [
-        ('pendiente', 'Pendiente'),       
-        ('en_proceso', 'En Proceso'),     
+        ('pendiente', 'Pendiente'),
+        ('en_proceso', 'En Proceso'),
         ('completada', 'Completada'),
         ('cancelada', 'Cancelada'),
     ]
@@ -259,10 +259,10 @@ class Intervencion(models.Model):
 
 class Notificacion(models.Model):
     TIPO_CHOICES = [
-        ('mantenimiento_programado', 'Mantenimiento Programado'),    
-        ('asignacion_tecnico', 'Asignación de Técnico'),             
-        ('cambio_estado', 'Cambio de Estado'),                       
-        ('mantenimiento_preventivo', 'Mantenimiento Preventivo'),    
+        ('mantenimiento_programado', 'Mantenimiento Programado'),
+        ('asignacion_tecnico', 'Asignación de Técnico'),
+        ('cambio_estado', 'Cambio de Estado'),
+        ('mantenimiento_preventivo', 'Mantenimiento Preventivo'),
         ('otro', 'Otro'),
     ]
 

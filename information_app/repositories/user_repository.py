@@ -1,4 +1,4 @@
-from ..models import Usuario, Tecnico
+from models import Usuario, Tecnico
 
 class UserRepository:
 
