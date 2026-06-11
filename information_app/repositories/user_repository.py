@@ -1,4 +1,4 @@
-from models import Usuario, Tecnico
+from information_app.models import Usuario, Tecnico
 
 class UserRepository:
 

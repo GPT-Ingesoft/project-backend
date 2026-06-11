@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from UserConfTest import UserServices, make_user
+from tests.user_conf_test import UserServices, make_user
 
 class TestValidateUserData(unittest.TestCase):
 
@@ -93,58 +93,58 @@ class TestRegisterUser(unittest.TestCase):
                 self.assertEqual(repo.create_user.call_args.kwargs["email"], expected_email)
 
 class TestFormatUserData(unittest.TestCase):
- 
+
     def test_format_user_data(self):
         cases = [
             ("Mary Garcia",   "mary@uni.edu",    "docente",        True   ),
             ("John Smith",    "john@uni.edu",    "laboratorista",  False  ),
             ("Peter Clark",   "peter@uni.edu",   "tecnico",        True   ),
         ]
- 
+
         for nombre, correo, rol, activo in cases:
             with self.subTest(rol=rol):
                 user   = make_user(nombre=nombre, correo=correo, rol=rol)
                 user.activo = activo
                 result = UserServices.format_user_data(user)
- 
+
                 self.assertEqual(result["name"],   nombre)
                 self.assertEqual(result["email"],  correo)
                 self.assertEqual(result["role"],   rol)
                 self.assertEqual(result["active"], activo)
                 self.assertIn("id",         result)
                 self.assertIn("created_at", result)
- 
+
 class TestRoleHelpers(unittest.TestCase):
- 
+
     def test_is_lab_technician(self):
         cases = [
             ("laboratorista",   True  ),
             ("docente",         False ),
             ("tecnico",         False ),
         ]
- 
+
         for rol, expected in cases:
             with self.subTest(rol=rol):
                 self.assertEqual(UserServices.is_lab_technician(make_user(rol=rol)), expected)
- 
+
     def test_is_teacher(self):
         cases = [
             ("docente",         True  ),
             ("laboratorista",   False ),
             ("tecnico",         False ),
         ]
- 
+
         for rol, expected in cases:
             with self.subTest(rol=rol):
                 self.assertEqual(UserServices.is_teacher(make_user(rol=rol)), expected)
- 
+
     def test_is_technician(self):
         cases = [
             ("tecnico",         True  ),
             ("docente",         False ),
             ("laboratorista",   False ),
         ]
- 
+
         for rol, expected in cases:
             with self.subTest(rol=rol):
                 self.assertEqual(UserServices.is_technician(make_user(rol=rol)), expected)
