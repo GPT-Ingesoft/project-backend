@@ -22,15 +22,18 @@ create_modules(
     "users",
     "users.repositories",
     "users.repositories.UserRepository",
+    "repositories",
+    "repositories.user_repository",
     "users.services"
 )
- 
+
 sys.modules["django.conf"].settings    = _Settings
 sys.modules["django.db"].transaction   = _Transaction
 sys.modules["django.core.cache"].cache = MagicMock()
 sys.modules["users.repositories.UserRepository"].UserRepository = MagicMock
+sys.modules["repositories.user_repository"].UserRepository = MagicMock
 
-service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" /"services" / "UserServices.py"
+service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" /"services" / "user_services.py"
 
 spec = importlib.util.spec_from_file_location(
     "users.services.UserServices",
@@ -49,4 +52,3 @@ def make_user(nombre="Ana Torres", correo="ana@test.com", rol="docente"):
     u.rol = rol;  u.activo = True
     u.fecha_creacion = datetime(2024, 1, 1, tzinfo=timezone.utc)
     return u
- 

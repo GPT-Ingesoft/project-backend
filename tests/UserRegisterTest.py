@@ -93,61 +93,168 @@ class TestRegisterUser(unittest.TestCase):
                 self.assertEqual(repo.create_user.call_args.kwargs["email"], expected_email)
 
 class TestFormatUserData(unittest.TestCase):
- 
+
     def test_format_user_data(self):
         cases = [
             ("Mary Garcia",   "mary@uni.edu",    "docente",        True   ),
             ("John Smith",    "john@uni.edu",    "laboratorista",  False  ),
             ("Peter Clark",   "peter@uni.edu",   "tecnico",        True   ),
         ]
- 
+
         for nombre, correo, rol, activo in cases:
             with self.subTest(rol=rol):
                 user   = make_user(nombre=nombre, correo=correo, rol=rol)
                 user.activo = activo
                 result = UserServices.format_user_data(user)
- 
+
                 self.assertEqual(result["name"],   nombre)
                 self.assertEqual(result["email"],  correo)
                 self.assertEqual(result["role"],   rol)
                 self.assertEqual(result["active"], activo)
                 self.assertIn("id",         result)
                 self.assertIn("created_at", result)
- 
+
 class TestRoleHelpers(unittest.TestCase):
- 
+
     def test_is_lab_technician(self):
         cases = [
             ("laboratorista",   True  ),
             ("docente",         False ),
             ("tecnico",         False ),
         ]
- 
+
         for rol, expected in cases:
             with self.subTest(rol=rol):
                 self.assertEqual(UserServices.is_lab_technician(make_user(rol=rol)), expected)
- 
+
     def test_is_teacher(self):
         cases = [
             ("docente",         True  ),
             ("laboratorista",   False ),
             ("tecnico",         False ),
         ]
- 
+
         for rol, expected in cases:
             with self.subTest(rol=rol):
                 self.assertEqual(UserServices.is_teacher(make_user(rol=rol)), expected)
- 
+
     def test_is_technician(self):
         cases = [
             ("tecnico",         True  ),
             ("docente",         False ),
             ("laboratorista",   False ),
         ]
- 
+
         for rol, expected in cases:
             with self.subTest(rol=rol):
                 self.assertEqual(UserServices.is_technician(make_user(rol=rol)), expected)
+
+class TestValidateProfileData(unittest.TestCase):
+
+    def test_validate_profile_data(self):
+        cases = [
+            ("Martin Botina", "martin@test.com", False, None),
+            ("Ana Torres", "ana@unal.edu.co", False, None),
+
+            ("", "martin@test.com", True, "name"),
+            ("   ", "martin@test.com", True, "name"),
+
+            ("Martin", "", True, "email"),
+
+            ("A", "martin@test.com", True, "Name"),
+
+            ("Martin", "martin", True, "Email"),
+            ("Martin", "martin@", True, "Email"),
+            ("Martin", "martin@test", True, "Email"),
+        ]
+
+        for name, email, raises, match in cases:
+            data = {"name": name,"email": email}
+            with self.subTest(name=name, email=email):
+                if raises:
+                    with self.assertRaises(ValueError) as cm:
+                        UserServices.validate_profile_data(data)
+
+                    self.assertIn(match, str(cm.exception))
+                else:
+                    UserServices.validate_profile_data(data)
+
+class TestUpdateOwnProfile(unittest.TestCase):
+
+    def _service(self, duplicated_email=False):
+        repo = MagicMock()
+        repo.email_exists_for_other_user.return_value = duplicated_email
+        repo.update_profile.return_value = make_user(
+            nombre="Martin Actualizado",
+            correo="martin.actualizado@test.com",
+            rol="docente"
+        )
+
+        svc = UserServices()
+        svc.user_repository = repo
+
+        user = make_user(
+            nombre="Martin Botina",
+            correo="martin@test.com",
+            rol="docente"
+        )
+
+        return svc, repo, user
+
+    def test_update_own_profile_successfully(self):
+        svc, repo, user = self._service()
+
+        result = svc.update_own_profile(
+            user,
+            {
+                "name": "Martin Actualizado",
+                "email": "martin.actualizado@test.com"
+            }
+        )
+
+        self.assertEqual(result["name"], "Martin Actualizado")
+        self.assertEqual(result["email"], "martin.actualizado@test.com")
+
+        repo.email_exists_for_other_user.assert_called_once_with(
+            "martin.actualizado@test.com",
+            user.id
+        )
+
+        repo.update_profile.assert_called_once_with(
+            user=user,
+            name="Martin Actualizado",
+            email="martin.actualizado@test.com"
+        )
+
+    def test_update_own_profile_rejects_duplicated_email(self):
+        svc, repo, user = self._service(duplicated_email=True)
+
+        with self.assertRaises(ValueError) as cm:
+            svc.update_own_profile(
+                user,
+                {
+                    "name": "Martin Actualizado",
+                    "email": "duplicado@test.com"
+                }
+            )
+
+        self.assertIn("duplicado@test.com", str(cm.exception))
+        repo.update_profile.assert_not_called()
+
+    def test_update_own_profile_rejects_invalid_data(self):
+        svc, repo, user = self._service()
+
+        with self.assertRaises(ValueError):
+            svc.update_own_profile(
+                user,
+                {
+                    "name": "",
+                    "email": "martin@test.com"
+                }
+            )
+
+        repo.email_exists_for_other_user.assert_not_called()
+        repo.update_profile.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
