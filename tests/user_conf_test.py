@@ -11,8 +11,7 @@ def create_modules(*names):
 
 class _Transaction:
     @staticmethod
-    def atomic(fn):
-        return fn
+    def atomic(fn): return fn
 
 class _Settings:
     SECRET_KEY = "clave-tests"
@@ -23,27 +22,26 @@ create_modules(
     "django.db",
     "django.core",
     "django.core.cache",
-    "users",
-    "users.repositories",
-    "users.repositories.UserRepository",
-    "users.services"
+
+    "repositories",
+    "repositories.user_repository",
 )
 
 sys.modules["django.conf"].settings    = _Settings
 sys.modules["django.db"].transaction   = _Transaction
 sys.modules["django.core.cache"].cache = MagicMock()
-sys.modules["users.repositories.UserRepository"].UserRepository = MagicMock
+sys.modules["repositories.user_repository"].UserRepository = MagicMock
 
-service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" /"services" / "UserServices.py"
+service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" /"services" / "user_services.py"
 
 spec = importlib.util.spec_from_file_location(
-    "users.services.UserServices",
+    "services.user_services",
     service_path
 )
 
 module = importlib.util.module_from_spec(spec)
-module.__package__ = "users.services"
-sys.modules["users.services.UserServices"] = module
+module.__package__ = "services"
+sys.modules["services.user_services"] = module
 spec.loader.exec_module(module)
 UserServices = module.UserServices
 

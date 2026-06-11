@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from information_app.repositories.equipment_repository import EquipmentRepository
+from repositories.equipment_repository import EquipmentRepository
 
 VALID_CRITICALITIES = {'alta', 'media', 'baja'}
 REQUIRED_EQUIPMENT_FIELDS = {'name', 'inventory_code', 'model', 'brand', 'serial_number', 'location'}
@@ -60,7 +60,6 @@ class EquipmentServices:
             )
 
         return self.format_equipment_data(equipment)
-
 
     @staticmethod
     def validate_equipment_data(data: dict, fields: list) -> None:
