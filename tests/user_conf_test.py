@@ -1,14 +1,18 @@
-import sys, types, importlib.util, pathlib
+import sys
+import types
+import importlib.util
+import pathlib
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
- 
+
 def create_modules(*names):
     for name in names:
         sys.modules.setdefault(name, types.ModuleType(name))
 
 class _Transaction:
     @staticmethod
-    def atomic(fn): return fn
+    def atomic(fn):
+        return fn
 
 class _Settings:
     SECRET_KEY = "clave-tests"
@@ -24,7 +28,7 @@ create_modules(
     "users.repositories.UserRepository",
     "users.services"
 )
- 
+
 sys.modules["django.conf"].settings    = _Settings
 sys.modules["django.db"].transaction   = _Transaction
 sys.modules["django.core.cache"].cache = MagicMock()
@@ -45,8 +49,10 @@ UserServices = module.UserServices
 
 def make_user(nombre="Ana Torres", correo="ana@test.com", rol="docente"):
     u = MagicMock()
-    u.id = 1;  u.nombre = nombre;  u.correo = correo
-    u.rol = rol;  u.activo = True
+    u.id = 1
+    u.nombre = nombre
+    u.correo = correo
+    u.rol = rol
+    u.activo = True
     u.fecha_creacion = datetime(2024, 1, 1, tzinfo=timezone.utc)
     return u
- 
