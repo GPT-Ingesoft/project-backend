@@ -14,10 +14,12 @@ from .controllers.user_controller import (
     ChangeStatusDebugView,
     ListUsersDebugView,
 )
-from .controllers.EquipmentController import (
+from .controllers.equipment_controller import (
     EquipmentView,
     EquipmentDetailView,
     EquipmentDebugView,
+    RegisterEquipmentView,
+    RegisterEquipmentDebugView,
 )
 
 app_name = 'information_app'
@@ -37,6 +39,7 @@ urlpatterns = [
 
     # ── Equipment management ───────────────────────────────────────────────────
     path('equipment/',                                      EquipmentView.as_view(),        name='list-equipment'),
+    path('equipment/register/',                             RegisterEquipmentView.as_view(),name='register-equipment'),
     path('equipment/<int:equipment_id>/availability/',      EquipmentDetailView.as_view(),  name='equipment-availability'),
     path('equipment/<int:equipment_id>/decommission/',      EquipmentDetailView.as_view(),  name='equipment-decommission'),
     path('equipment/<int:equipment_id>/criticality/',       EquipmentDetailView.as_view(),  name='equipment-criticality'),
@@ -48,5 +51,6 @@ urlpatterns = [
     path('users/<int:user_id>/status_debug/',           ChangeStatusDebugView.as_view(),  name='change-status-debug'),
 
     path('equipment/debug/',                                        EquipmentDebugView.as_view(),  name='list-equipment-debug'),
+    path('equipment/register_debug/',                               RegisterEquipmentDebugView.as_view(),name='register-equipment-debug'),
     path('equipment/<int:equipment_id>/debug/<str:action>/',        EquipmentDebugView.as_view(),  name='equipment-action-debug'),
 ]

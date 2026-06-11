@@ -1,18 +1,36 @@
-from ..models import Equipo
+from models import Equipo
 from django.utils import timezone
 
 class EquipmentRepository:
 
     # ── Query operations ───────────────────────────────────────────────────────
     def get_by_id(self, equipment_id: int):
-        # Returns equipment regardless of status
         return Equipo.objects.filter(id=equipment_id).first()
 
     def get_all(self):
-        # Returns all equipment ordered by name
         return Equipo.objects.all().order_by('nombre')
 
+    def inventory_code_exists(self, inventory_code: str) -> bool:
+        return Equipo.objects.filter(codigo_inventario=inventory_code).exists()
+
+    def serial_number_exists(self, serial_number: str) -> bool:
+        return Equipo.objects.filter(numero_serie=serial_number).exists()
+
     # ── Write operations ───────────────────────────────────────────────────────
+    def create(self, name: str, inventory_code: str, model: str, brand: str,
+               serial_number: str, location: str, status: str, criticality: str) -> Equipo:
+
+        return Equipo.objects.create(
+            nombre=name,
+            codigo_inventario=inventory_code,
+            modelo=model,
+            marca=brand,
+            numero_serie=serial_number,
+            ubicacion=location,
+            estado=status,
+            criticidad=criticality,
+        )
+
     def decommission(self, equipment: Equipo, reason: str) -> Equipo:
         equipment.estado = 'dado_de_baja'
         equipment.motivo_baja = reason
