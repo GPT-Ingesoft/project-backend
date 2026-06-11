@@ -1,5 +1,6 @@
-from information_app.models import Equipo, Intervencion
 from django.utils import timezone
+
+from information_app.models import Equipo, Intervencion
 
 class EquipmentRepository:
 

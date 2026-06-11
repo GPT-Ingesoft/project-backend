@@ -1,8 +1,7 @@
 import secrets
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
-
-from information_app.repositories.user_repository import UserRepository
+import re
 
 from django.db import transaction
 from django.conf import settings
@@ -10,7 +9,8 @@ from django.core.cache import cache
 
 import jwt
 import requests
-import re
+
+from information_app.repositories.user_repository import UserRepository
 
 VALID_ROLES        = {'docente', 'laboratorista', 'tecnico'}
 BASE_FIELDS        = {'name', 'email', 'role'}

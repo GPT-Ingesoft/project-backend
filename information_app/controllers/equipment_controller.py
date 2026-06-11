@@ -1,8 +1,9 @@
-from information_app.services.equipment_services import EquipmentServices
-from information_app.services.user_services import UserServices
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+from information_app.services.equipment_services import EquipmentServices
+from information_app.services.user_services import UserServices
 
 HTTP_200_OK = status.HTTP_200_OK
 HTTP_201_CREATED = status.HTTP_201_CREATED
@@ -200,4 +201,3 @@ class RegisterEquipmentDebugView(APIView):
             return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
