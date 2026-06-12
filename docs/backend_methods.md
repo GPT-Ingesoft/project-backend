@@ -389,3 +389,141 @@ Content-Type: application/json
 Idénticos al endpoint `POST /api/users/register/`, sin los errores `401` y `403`.
 
 ---
+
+## Módulo 3: Gestión de Equipos
+ 
+### 7. Registrar Equipo
+ 
+> Requiere autenticación. Solo usuarios con rol `laboratorista` pueden acceder a este endpoint.
+ 
+#### Endpoint
+ 
+```
+POST /api/equipment/register/
+```
+ 
+#### Headers
+ 
+```
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+ 
+#### Body
+ 
+```json
+{
+  "name":           "Microscopio Óptico",
+  "inventory_code": "EQ-001",
+  "model":          "Axiostar Plus",
+  "brand":          "Zeiss",
+  "serial_number":  "SN-2024-001",
+  "location":       "Laboratorio 3 - Piso 2",
+  "status":         "operativo",
+  "criticality":    "alta"
+}
+```
+ 
+#### Campos
+ 
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `name` | string | Sí | Nombre del equipo. |
+| `inventory_code` | string | Sí | Código de inventario. Debe ser único en el sistema. |
+| `model` | string | Sí | Modelo del equipo. |
+| `brand` | string | Sí | Marca fabricante del equipo. |
+| `serial_number` | string | Sí | Número de serie. Debe ser único en el sistema. |
+| `location` | string | Sí | Ubicación física del equipo. |
+| `status` | string | No | Estado inicial. Por defecto: `operativo`. Valores: `operativo`, `en_mantenimiento`, `fuera_de_servicio`. |
+| `criticality` | string | No | Criticidad del equipo. Por defecto: `media`. Valores: `alta`, `media`, `baja`. |
+ 
+---
+ 
+#### Respuestas
+ 
+**`201 Created` — Registro exitoso**
+ 
+```json
+{
+  "message": "Equipment registered successfully.",
+  "equipment": {
+    "id":                  1,
+    "name":                "Microscopio Óptico",
+    "inventory_code":      "EQ-001",
+    "model":               "Axiostar Plus",
+    "brand":               "Zeiss",
+    "serial_number":       "SN-2024-001",
+    "location":            "Laboratorio 3 - Piso 2",
+    "status":              "operativo",
+    "criticality":         "alta",
+    "decommission_reason": null,
+    "decommission_date":   null,
+    "created_at":          "2026-05-25T10:30:00"
+  }
+}
+```
+ 
+**`400 Bad Request` — Error de validación**
+ 
+```json
+{
+  "error": "<mensaje de error descriptivo>"
+}
+```
+ 
+**`403 Forbidden` — Token inválido o rol insuficiente**
+ 
+```json
+{
+  "error": "Only lab technicians can register equipment."
+}
+```
+ 
+```json
+{
+  "error": "<token error message>"
+}
+```
+ 
+**`500 Internal Server Error`**
+ 
+```json
+{
+  "error": "Internal error. Please contact support."
+}
+```
+ 
+---
+ 
+#### Casos de error frecuentes
+ 
+| Situación | Mensaje de error |
+|---|---|
+| Campo obligatorio vacío o ausente | `"Field '<field>' is required and cannot be empty."` |
+| Estado no reconocido | `"Status '<status>' is not valid. Allowed values: en_mantenimiento, fuera_de_servicio, operativo."` |
+| Criticidad no reconocida | `"Criticality '<criticality>' is not valid. Allowed values: alta, baja, media."` |
+| Código de inventario ya registrado | `"Inventory code '<code>' is already registered. Please use a different code."` |
+| Número de serie ya registrado | `"Serial number '<serial>' is already registered. Please verify the serial number."` |
+| Body inválido o sin `Content-Type` | `"The request body must be a valid JSON object. Make sure to include the header Content-Type: application/json"` |
+ 
+---
+ 
+### 8. Registrar Equipo (Debug)
+ 
+> ⚠️ **Solo para desarrollo.** Este endpoint no requiere autenticación.
+ 
+#### Endpoint
+ 
+```
+POST /api/equipment/register_debug/
+```
+ 
+#### Headers
+ 
+```
+Content-Type: application/json
+```
+ 
+#### Body y Respuestas
+ 
+Idénticos al endpoint `POST /api/equipment/register/`, sin los errores `403`.

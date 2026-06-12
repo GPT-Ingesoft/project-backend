@@ -13,15 +13,15 @@ create_modules(
     "information_app",
     "information_app.services",
     "information_app.repositories",
-    "information_app.repositories.EquipmentRepository",
+    "information_app.repositories.equipment_repository",
     "repositories",
     "repositories.equipment_repository",
 )
 
-sys.modules["information_app.repositories.EquipmentRepository"].EquipmentRepository = MagicMock
+sys.modules["information_app.repositories.equipment_repository"].EquipmentRepository = MagicMock
 sys.modules["repositories.equipment_repository"].EquipmentRepository = MagicMock
 
-service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "EquipmentServices.py"
+service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "equipment_services.py"
 
 spec = importlib.util.spec_from_file_location(
     "information_app.services.EquipmentServices",

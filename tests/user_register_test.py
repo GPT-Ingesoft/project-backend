@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from UserConfTest import UserServices, make_user
+from tests.user_conf_test import UserServices, make_user
 
 class TestValidateUserData(unittest.TestCase):
 
@@ -178,6 +178,27 @@ class TestValidateProfileData(unittest.TestCase):
                     self.assertIn(match, str(cm.exception))
                 else:
                     UserServices.validate_profile_data(data)
+
+    def test_validate_profile_data_accepts_trimmed_name_and_normalized_email(self):
+        data = {
+            "name": "  Martin Botina  ",
+            "email": "  MARTIN@TEST.COM  "
+        }
+
+        UserServices.validate_profile_data(data)
+
+    def test_validate_profile_data_rejects_email_without_local_or_domain_part(self):
+        cases = [
+            {"name": "Martin", "email": "@test.com"},
+            {"name": "Martin", "email": "martin@test."},
+        ]
+
+        for data in cases:
+            with self.subTest(email=data["email"]):
+                with self.assertRaises(ValueError) as cm:
+                    UserServices.validate_profile_data(data)
+
+                self.assertIn("Email", str(cm.exception))
 
 class TestUpdateOwnProfile(unittest.TestCase):
 
