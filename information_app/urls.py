@@ -20,6 +20,7 @@ from information_app.controllers.equipment_controller import (
     EquipmentDetailView,
     EquipmentHistoryView,
     EquipmentDebugView,
+    EquipmentDetailDebugView,
     RegisterEquipmentView,
     RegisterEquipmentDebugView,
 )
@@ -56,5 +57,7 @@ urlpatterns = [
 
     path('equipment/debug/',                                        EquipmentDebugView.as_view(),  name='list-equipment-debug'),
     path('equipment/register_debug/',                               RegisterEquipmentDebugView.as_view(),name='register-equipment-debug'),
-    path('equipment/<int:equipment_id>/debug/<str:action>/',        EquipmentDebugView.as_view(),  name='equipment-action-debug'),
+    path('equipment/<int:equipment_id>/availability_debug/',        EquipmentDetailDebugView.as_view(), name='equipment-availability-debug'),
+    path('equipment/<int:equipment_id>/decommission_debug/',         EquipmentDetailDebugView.as_view(), name='equipment-decommission-debug'),
+    path('equipment/<int:equipment_id>/criticality_debug/',          EquipmentDetailDebugView.as_view(), name='equipment-criticality-debug'),
 ]

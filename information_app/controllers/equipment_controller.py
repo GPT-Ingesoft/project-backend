@@ -17,12 +17,20 @@ class EquipmentView(APIView):
 
     # ── GET /api/equipment/ ────────────────────────────────────────────────────
     def get(self, request):
+        # Requires an authenticated user
+        user_service = UserServices()
+        try:
+            user_service.extract_user_from_token(request)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
+
         service = EquipmentServices()
         try:
             equipment = service.list_equipment()
             return Response({'equipment': equipment}, status=HTTP_200_OK)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class RegisterEquipmentView(APIView):
     def post(self, request):
@@ -57,6 +65,7 @@ class RegisterEquipmentView(APIView):
             return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class EquipmentDetailView(APIView):
 
@@ -119,6 +128,7 @@ class EquipmentDetailView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class EquipmentHistoryView(APIView):
 
     # ── GET /api/equipment/<id>/history/ ───────────────────────────────────────
@@ -141,6 +151,7 @@ class EquipmentHistoryView(APIView):
                 status=HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
 #################### DEBUG ####################
 
 class EquipmentDebugView(APIView):
@@ -154,30 +165,53 @@ class EquipmentDebugView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def patch(self, request, equipment_id, action):
-        # Debug - Perform actions without authentication
+
+class EquipmentDetailDebugView(APIView):
+
+    # ── GET /api/equipment/<id>/availability_debug/ ────────────────────────────
+    def get(self, request, equipment_id):
+        # Debug - RF_08 without authentication
         service = EquipmentServices()
         try:
-            if action == 'decommission':
-                reason = request.data.get('reason', '').strip()
-                if not reason:
-                    return Response({'error': "Field 'reason' is required."}, status=HTTP_400_BAD_REQUEST)
-                equipment = service.decommission_equipment(equipment_id, reason)
-                return Response({'message': 'Equipment decommissioned successfully.', 'equipment': equipment}, status=HTTP_200_OK)
-
-            if action == 'criticality':
-                criticality = request.data.get('criticality', '').strip().lower()
-                if not criticality:
-                    return Response({'error': "Field 'criticality' is required."}, status=HTTP_400_BAD_REQUEST)
-                equipment = service.update_criticality(equipment_id, criticality)
-                return Response({'message': 'Criticality updated successfully.', 'equipment': equipment}, status=HTTP_200_OK)
-
-            return Response({'error': f"Unknown action '{action}'."}, status=HTTP_400_BAD_REQUEST)
-
+            equipment = service.verify_availability(equipment_id)
+            return Response({'message': 'Equipment available.', 'equipment': equipment}, status=HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # ── PATCH /api/equipment/<id>/decommission_debug/ ──────────────────────────
+    def decommission(self, request, equipment_id):
+        # Debug - RF_07 without authentication
+        reason = request.data.get('reason', '').strip()
+        if not reason:
+            return Response({'error': "Field 'reason' is required."}, status=HTTP_400_BAD_REQUEST)
+
+        service = EquipmentServices()
+        try:
+            equipment = service.decommission_equipment(equipment_id, reason)
+            return Response({'message': 'Equipment decommissioned successfully.', 'equipment': equipment}, status=HTTP_200_OK)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # ── PATCH /api/equipment/<id>/criticality_debug/ ───────────────────────────
+    def update_criticality(self, request, equipment_id):
+        # Debug - RF_09 without authentication
+        criticality = request.data.get('criticality', '').strip().lower()
+        if not criticality:
+            return Response({'error': "Field 'criticality' is required."}, status=HTTP_400_BAD_REQUEST)
+
+        service = EquipmentServices()
+        try:
+            equipment = service.update_criticality(equipment_id, criticality)
+            return Response({'message': 'Criticality updated successfully.', 'equipment': equipment}, status=HTTP_200_OK)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class RegisterEquipmentDebugView(APIView):
     def post(self, request):
