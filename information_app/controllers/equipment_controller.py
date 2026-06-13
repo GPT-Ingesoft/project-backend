@@ -17,6 +17,13 @@ class EquipmentView(APIView):
 
     # ── GET /api/equipment/ ────────────────────────────────────────────────────
     def get(self, request):
+        # Requires an authenticated user
+        user_service = UserServices()
+        try:
+            user_service.extract_user_from_token(request)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
+
         service = EquipmentServices()
         try:
             equipment = service.list_equipment()
