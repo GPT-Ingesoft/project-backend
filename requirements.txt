@@ -8,3 +8,4 @@ django-environ == 0.13.0
 pylint == 4.0.5
 pylint-django == 2.7.0
 pytest == 9.0.3
+coverage == 7.14.1
