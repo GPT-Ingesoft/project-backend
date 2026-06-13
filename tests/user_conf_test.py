@@ -22,12 +22,6 @@ create_modules(
     "django.db",
     "django.core",
     "django.core.cache",
-    "users",
-    "users.repositories",
-    "users.repositories.UserRepository",
-    "repositories",
-    "repositories.user_repository",
-    "users.services"
 
     "information_app",
     "information_app.repositories",
@@ -37,8 +31,6 @@ create_modules(
 sys.modules["django.conf"].settings    = _Settings
 sys.modules["django.db"].transaction   = _Transaction
 sys.modules["django.core.cache"].cache = MagicMock()
-sys.modules["users.repositories.UserRepository"].UserRepository = MagicMock
-sys.modules["repositories.user_repository"].UserRepository = MagicMock
 sys.modules["information_app.repositories.user_repository"].UserRepository = MagicMock
 
 service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" /"services" / "user_services.py"
