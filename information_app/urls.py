@@ -17,9 +17,14 @@ from information_app.controllers.user_controller import (
 )
 from information_app.controllers.equipment_controller import (
     EquipmentView,
-    EquipmentDetailView,
+    EquipmentAvailabilityView,
+    EquipmentDecommissionView,
+    EquipmentCriticalityView,
     EquipmentHistoryView,
     EquipmentDebugView,
+    EquipmentAvailabilityDebugView,
+    EquipmentDecommissionDebugView,
+    EquipmentCriticalityDebugView,
     RegisterEquipmentView,
     RegisterEquipmentDebugView,
 )
@@ -41,12 +46,12 @@ urlpatterns = [
     path('auth/me/',                      MeView.as_view(),                name='auth-me'),
 
     # ── Equipment management ───────────────────────────────────────────────────
-    path('equipment/',                                      EquipmentView.as_view(),        name='list-equipment'),
-    path('equipment/register/',                             RegisterEquipmentView.as_view(),name='register-equipment'),
-    path('equipment/<int:equipment_id>/availability/',      EquipmentDetailView.as_view(),  name='equipment-availability'),
-    path('equipment/<int:equipment_id>/history/',           EquipmentHistoryView.as_view(), name='equipment-history'),
-    path('equipment/<int:equipment_id>/decommission/',      EquipmentDetailView.as_view(),  name='equipment-decommission'),
-    path('equipment/<int:equipment_id>/criticality/',       EquipmentDetailView.as_view(),  name='equipment-criticality'),
+    path('equipment/',                                      EquipmentView.as_view(),              name='list-equipment'),
+    path('equipment/register/',                             RegisterEquipmentView.as_view(),       name='register-equipment'),
+    path('equipment/<int:equipment_id>/availability/',      EquipmentAvailabilityView.as_view(),   name='equipment-availability'),
+    path('equipment/<int:equipment_id>/history/',           EquipmentHistoryView.as_view(),        name='equipment-history'),
+    path('equipment/<int:equipment_id>/decommission/',      EquipmentDecommissionView.as_view(),   name='equipment-decommission'),
+    path('equipment/<int:equipment_id>/criticality/',       EquipmentCriticalityView.as_view(),    name='equipment-criticality'),
 
     #################### DEBUG #######################
     path('users/register_debug/',                       RegisterUserDebugView.as_view(),  name='register-user-debug'),
@@ -54,7 +59,9 @@ urlpatterns = [
     path('users/<int:user_id>/role_debug/',             AssignRoleDebugView.as_view(),    name='assign-role-debug'),
     path('users/<int:user_id>/status_debug/',           ChangeStatusDebugView.as_view(),  name='change-status-debug'),
 
-    path('equipment/debug/',                                        EquipmentDebugView.as_view(),  name='list-equipment-debug'),
-    path('equipment/register_debug/',                               RegisterEquipmentDebugView.as_view(),name='register-equipment-debug'),
-    path('equipment/<int:equipment_id>/debug/<str:action>/',        EquipmentDebugView.as_view(),  name='equipment-action-debug'),
+    path('equipment/debug/',                                        EquipmentDebugView.as_view(),               name='list-equipment-debug'),
+    path('equipment/register_debug/',                               RegisterEquipmentDebugView.as_view(),       name='register-equipment-debug'),
+    path('equipment/<int:equipment_id>/availability_debug/',        EquipmentAvailabilityDebugView.as_view(),   name='equipment-availability-debug'),
+    path('equipment/<int:equipment_id>/decommission_debug/',        EquipmentDecommissionDebugView.as_view(),   name='equipment-decommission-debug'),
+    path('equipment/<int:equipment_id>/criticality_debug/',         EquipmentCriticalityDebugView.as_view(),    name='equipment-criticality-debug'),
 ]
