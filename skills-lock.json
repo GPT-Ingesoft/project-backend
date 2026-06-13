@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "django-rest-framework": {
+      "source": "thebushidocollective/han",
+      "sourceType": "github",
+      "skillPath": "plugins/frameworks/django/skills/django-rest-framework/SKILL.md",
+      "computedHash": "ad0044e5047bcd30d48daad14486ba3128c51418aa451de90ce01b3f31a140a8"
+    }
+  }
+}
