@@ -21,7 +21,7 @@ class TestApproveRequest(unittest.TestCase):
                 return sol
             repo.aprobar.side_effect = aprobar
 
-        svc = SolicitudServices()
+        svc = RequestServices()
         svc.repo = repo
         return svc, repo
 
