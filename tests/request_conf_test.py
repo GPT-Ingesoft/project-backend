@@ -29,7 +29,7 @@ create_modules(
 
 sys.modules["django.db"].transaction = _Transaction
 sys.modules["django.utils"].timezone = MagicMock()
-sys.modules["information_app.repositories.Request_repository"].RequestRepository = MagicMock
+sys.modules["information_app.repositories.request_repository"].RequestRepository = MagicMock
 
 service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "request_services.py"
 
@@ -43,7 +43,7 @@ module.__package__ = "information_app.services"
 sys.modules["information_app.services.request_services"] = module
 spec.loader.exec_module(module)
 SolicitudServices = module.RequestServices
-
+RequestServices = SolicitudServices 
 
 def make_user(nombre="Ana Torres", correo="ana@test.com", rol="docente"):
     u = MagicMock()
