@@ -7,7 +7,7 @@ class AdminRepository:
 
     # ── RF_47: Historial de notificaciones del más reciente al más antiguo ─────
 
-    def get_historial_notificaciones(self):
+    def get_notification_history(self):
         # Notificacion.Meta ya define ordering=['-fecha_envio'], lo reforzamos aquí
         return (
             Notificacion.objects
@@ -18,7 +18,7 @@ class AdminRepository:
 
     # ── RF_50: Equipos ordenados de mayor a menor número de fallas ─────────────
 
-    def get_reporte_fallas(self):
+    def get_failure_report(self):
         return (
             Equipo.objects
             .annotate(total_fallas=Count('solicitudes'))
@@ -29,7 +29,7 @@ class AdminRepository:
 
     # ── RF_51: Tiempo promedio de reparación por equipo (solicitudes completadas)
 
-    def get_reporte_tiempos_reparacion(self):
+    def get_repair_time_report(self):
         # Solo solicitudes completadas con fecha_cierre registrada
         return (
             Equipo.objects
@@ -47,7 +47,7 @@ class AdminRepository:
 
     # ── RF_52: Equipos fuera de servicio con inactividad mayor al umbral ────────
 
-    def get_equipos_fuera_de_servicio(self, umbral_dias: int):
+    def get_out_of_service_equipment(self, umbral_dias: int):
         ahora = timezone.now()
         equipos = list(
             Equipo.objects
@@ -64,7 +64,7 @@ class AdminRepository:
 
     # ── RF_53: Equipos activos para el panel principal ────────────────────────
 
-    def get_equipos_activos(self):
+    def get_active_equipment(self):
         return (
             Equipo.objects
             .filter(estado__in=('operativo', 'en_mantenimiento'))
