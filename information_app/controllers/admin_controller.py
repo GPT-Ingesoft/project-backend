@@ -11,7 +11,7 @@ from rest_framework          import status
 # GET /api/admin/notificaciones/
 # =============================================================================
 
-class NotificacionHistorialView(APIView):
+class NotificationHistoryView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -36,7 +36,7 @@ class NotificacionHistorialView(APIView):
 # GET /api/admin/reportes/fallas/
 # =============================================================================
 
-class ReporteFallasView(APIView):
+class FailureReportView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -61,7 +61,7 @@ class ReporteFallasView(APIView):
 # GET /api/admin/reportes/tiempos-reparacion/
 # =============================================================================
 
-class ReporteTiemposReparacionView(APIView):
+class RepairTimeReportView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -87,7 +87,7 @@ class ReporteTiemposReparacionView(APIView):
 #   umbral_dias: días mínimos de inactividad (default: 30)
 # =============================================================================
 
-class ReporteFueraDeServicioView(APIView):
+class OutOfServiceReportView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -116,7 +116,7 @@ class ReporteFueraDeServicioView(APIView):
 # Accesible por cualquier usuario autenticado
 # =============================================================================
 
-class PanelEquiposActivosView(APIView):
+class ActiveEquipmentDashboardView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -136,7 +136,7 @@ class PanelEquiposActivosView(APIView):
 
 #################### DEBUG ####################
 
-class NotificacionHistorialDebugView(APIView):
+class NotificationHistoryDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -148,7 +148,7 @@ class NotificacionHistorialDebugView(APIView):
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ReporteFallasDebugView(APIView):
+class FailureReportDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -160,7 +160,7 @@ class ReporteFallasDebugView(APIView):
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ReporteTiemposDebugView(APIView):
+class RepairTimeReportDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -172,7 +172,7 @@ class ReporteTiemposDebugView(APIView):
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ReporteFueraServicioDebugView(APIView):
+class OutOfServiceReportDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -187,7 +187,7 @@ class ReporteFueraServicioDebugView(APIView):
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class PanelEquiposActivosDebugView(APIView):
+class ActiveEquipmentDashboardDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
