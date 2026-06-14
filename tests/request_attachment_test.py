@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import MagicMock
-from tests.solicitud_conf_test import SolicitudServices, make_solicitud, make_usuario, make_adjunto
+from tests.request_conf_test import RequestServices, make_request, make_user, make_attachment
 
 
-class TestSubirAdjunto(unittest.TestCase):
+class TestUploadAttachment(unittest.TestCase):
     """
     RF_38: El sistema debe asociar los archivos adjuntos a la solicitud
     correspondiente y registrar su fecha y hora de carga.
@@ -12,9 +12,9 @@ class TestSubirAdjunto(unittest.TestCase):
     def _service(self, solicitud=None, adjunto=None):
         repo = MagicMock()
         repo.get_by_id.return_value = solicitud
-        repo.crear_adjunto.return_value = adjunto or make_adjunto()
+        repo.crear_adjunto.return_value = adjunto or make_attachment()
 
-        svc = SolicitudServices()
+        svc = RequestServices()
         svc.repo = repo
         return svc, repo
 
@@ -26,9 +26,9 @@ class TestSubirAdjunto(unittest.TestCase):
 
     # ── Caso exitoso ───────────────────────────────────────────────────────
 
-    def test_subir_adjunto_exitoso_queda_asociado_a_la_solicitud(self):
-        solicitud = make_solicitud(id=7, estado="en_proceso")
-        adjunto = make_adjunto(solicitud_id=7)
+    def test_successful_attachment_upload_is_associated_with_request(self):
+        solicitud = make_request(id=7, estado="en_proceso")
+        adjunto = make_attachment(solicitud_id=7)
         svc, repo = self._service(solicitud, adjunto)
 
         result = svc.subir_adjunto(
@@ -38,16 +38,16 @@ class TestSubirAdjunto(unittest.TestCase):
             nombre="diagnostico.pdf",
             tamanio=2048,
             descripcion="Foto del daño",
-            usuario=make_usuario(),
+            usuario=make_user(),
         )
 
         self.assertEqual(result["solicitud_id"], 7)
         self.assertEqual(result["nombre_archivo"], "diagnostico.pdf")
         repo.crear_adjunto.assert_called_once()
 
-    def test_subir_adjunto_registra_fecha_de_carga(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
-        adjunto = make_adjunto()
+    def test_attachment_upload_records_upload_date(self):
+        solicitud = make_request(id=1, estado="pendiente")
+        adjunto = make_attachment()
         svc, _ = self._service(solicitud, adjunto)
 
         result = svc.subir_adjunto(
@@ -57,15 +57,15 @@ class TestSubirAdjunto(unittest.TestCase):
             nombre="foto.png",
             tamanio=1024,
             descripcion="Evidencia del problema",
-            usuario=make_usuario(),
+            usuario=make_user(),
         )
 
         self.assertIn("fecha_carga", result)
         self.assertEqual(result["fecha_carga"], adjunto.fecha_carga.isoformat())
 
-    def test_tipo_no_especificado_usa_otro_por_defecto(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
-        adjunto = make_adjunto(tipo="otro")
+    def test_unspecified_type_uses_default_other(self):
+        solicitud = make_request(id=1, estado="pendiente")
+        adjunto = make_attachment(tipo="otro")
         svc, repo = self._service(solicitud, adjunto)
 
         svc.subir_adjunto(
@@ -75,15 +75,15 @@ class TestSubirAdjunto(unittest.TestCase):
             nombre="archivo.bin",
             tamanio=10,
             descripcion="Sin tipo especificado",
-            usuario=make_usuario(),
+            usuario=make_user(),
         )
 
         _, kwargs = repo.crear_adjunto.call_args
         self.assertEqual(kwargs["tipo"], "otro")
 
-    def test_nombre_y_descripcion_se_recortan(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
-        svc, repo = self._service(solicitud, make_adjunto())
+    def test_name_and_description_are_trimmed(self):
+        solicitud = make_request(id=1, estado="pendiente")
+        svc, repo = self._service(solicitud, make_attachment())
 
         svc.subir_adjunto(
             solicitud_id=1,
@@ -92,7 +92,7 @@ class TestSubirAdjunto(unittest.TestCase):
             nombre="  reporte.pdf  ",
             tamanio=10,
             descripcion="  Informe técnico  ",
-            usuario=make_usuario(),
+            usuario=make_user(),
         )
 
         _, kwargs = repo.crear_adjunto.call_args
@@ -101,98 +101,98 @@ class TestSubirAdjunto(unittest.TestCase):
 
     # ── Casos límite / de error ───────────────────────────────────────────
 
-    def test_archivo_faltante_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_missing_file_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
             svc.subir_adjunto(
                 solicitud_id=1, archivo=None, tipo="documento",
                 nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_usuario(),
+                descripcion="desc", usuario=make_user(),
             )
 
         self.assertIn("archivo", str(cm.exception).lower())
         repo.crear_adjunto.assert_not_called()
 
-    def test_nombre_archivo_vacio_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_empty_file_name_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
             svc.subir_adjunto(
                 solicitud_id=1, archivo=self._archivo(), tipo="documento",
                 nombre="   ", tamanio=10,
-                descripcion="desc", usuario=make_usuario(),
+                descripcion="desc", usuario=make_user(),
             )
 
         self.assertIn("nombre_archivo", str(cm.exception))
         repo.crear_adjunto.assert_not_called()
 
-    def test_descripcion_vacia_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_empty_description_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
             svc.subir_adjunto(
                 solicitud_id=1, archivo=self._archivo(), tipo="documento",
                 nombre="archivo.pdf", tamanio=10,
-                descripcion="", usuario=make_usuario(),
+                descripcion="", usuario=make_user(),
             )
 
         self.assertIn("descripcion", str(cm.exception))
         repo.crear_adjunto.assert_not_called()
 
-    def test_tipo_invalido_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_invalid_type_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
             svc.subir_adjunto(
                 solicitud_id=1, archivo=self._archivo(), tipo="audio",
                 nombre="archivo.mp3", tamanio=10,
-                descripcion="desc", usuario=make_usuario(),
+                descripcion="desc", usuario=make_user(),
             )
 
         self.assertIn("audio", str(cm.exception))
         repo.crear_adjunto.assert_not_called()
 
-    def test_solicitud_inexistente_lanza_error(self):
+    def test_nonexistent_request_raises_error(self):
         svc, repo = self._service(solicitud=None)
 
         with self.assertRaises(ValueError) as cm:
             svc.subir_adjunto(
                 solicitud_id=999, archivo=self._archivo(), tipo="documento",
                 nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_usuario(),
+                descripcion="desc", usuario=make_user(),
             )
 
         self.assertIn("no encontrada", str(cm.exception))
         repo.crear_adjunto.assert_not_called()
 
-    def test_no_se_puede_adjuntar_a_solicitud_completada(self):
-        solicitud = make_solicitud(id=1, estado="completada")
+    def test_cannot_attach_to_completed_request(self):
+        solicitud = make_request(id=1, estado="completada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
             svc.subir_adjunto(
                 solicitud_id=1, archivo=self._archivo(), tipo="documento",
                 nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_usuario(),
+                descripcion="desc", usuario=make_user(),
             )
 
         self.assertIn("completada", str(cm.exception))
         repo.crear_adjunto.assert_not_called()
 
-    def test_no_se_puede_adjuntar_a_solicitud_cancelada(self):
-        solicitud = make_solicitud(id=1, estado="cancelada")
+    def test_cannot_attach_to_cancelled_request(self):
+        solicitud = make_request(id=1, estado="cancelada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
             svc.subir_adjunto(
                 solicitud_id=1, archivo=self._archivo(), tipo="documento",
                 nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_usuario(),
+                descripcion="desc", usuario=make_user(),
             )
 
         repo.crear_adjunto.assert_not_called()
