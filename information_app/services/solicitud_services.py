@@ -1,3 +1,4 @@
+from django.db import transaction
 from ..repositories.Solicitud_repository import SolicitudRepository
 
 ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
@@ -17,6 +18,7 @@ class SolicitudServices:
 
     # ── RF_35: Aprobar solicitud → estado "En proceso" automático ─────────────
 
+    @transaction.atomic
     def aprobar_solicitud(self, solicitud_id: int, usuario) -> dict:
         solicitud = self.repo.get_by_id(solicitud_id)
         if not solicitud:
@@ -43,7 +45,8 @@ class SolicitudServices:
         return list(self.repo.get_laboratorios())
 
     # ── RF_37: Cambio manual de estado con motivo obligatorio ─────────────────
-
+    
+    @transaction.atomic    
     def cambiar_estado_manual(self, solicitud_id: int, nuevo_estado: str, motivo: str, usuario) -> dict:
         if not motivo or not motivo.strip():
             raise ValueError("Debe especificar un motivo para el cambio de estado. El campo 'motivo' es obligatorio.")
@@ -68,6 +71,7 @@ class SolicitudServices:
 
     # ── RF_38: Subir archivos adjuntos ────────────────────────────────────────
 
+    @transaction.atomic
     def subir_adjunto(self, solicitud_id: int, archivo, tipo: str, nombre: str,
                       tamanio: int, descripcion: str, usuario) -> dict:
         if not archivo:
