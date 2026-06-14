@@ -19,7 +19,7 @@ class TestApproveRequest(unittest.TestCase):
             def approve(sol, usuario):
                 sol.estado = "en_proceso"
                 return sol
-            repo.approve.side_effect = aprobar
+            repo.approve.side_effect = approve
 
         svc = RequestServices()
         svc.repo = repo
