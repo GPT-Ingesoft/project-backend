@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import MagicMock
-from tests.solicitud_conf_test import SolicitudServices, make_solicitud, make_usuario
+from tests.request_conf_test import RequestServices, make_request, make_user
 
 
-class TestCambiarEstadoManual(unittest.TestCase):
+class TestManualStatusChange(unittest.TestCase):
     """
     RF_37: Si el estado de una solicitud es cambiado manualmente, el
     módulo de gestión de solicitudes debe garantizar que se especifique
@@ -20,73 +20,73 @@ class TestCambiarEstadoManual(unittest.TestCase):
                 return sol
             repo.cambiar_estado.side_effect = cambiar_estado
 
-        svc = SolicitudServices()
+        svc = RequestServices()
         svc.repo = repo
         return svc, repo
 
     # ── Validación del motivo obligatorio ─────────────────────────────────
 
-    def test_motivo_vacio_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_empty_reason_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "cancelada", "", make_usuario())
+            svc.cambiar_estado_manual(1, "cancelada", "", make_user())
 
         self.assertIn("motivo", str(cm.exception).lower())
         repo.cambiar_estado.assert_not_called()
 
-    def test_motivo_solo_espacios_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_reason_with_only_spaces_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.cambiar_estado_manual(1, "cancelada", "   ", make_usuario())
+            svc.cambiar_estado_manual(1, "cancelada", "   ", make_user())
 
         repo.cambiar_estado.assert_not_called()
 
-    def test_motivo_none_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_none_reason_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.cambiar_estado_manual(1, "cancelada", None, make_usuario())
+            svc.cambiar_estado_manual(1, "cancelada", None, make_user())
 
         repo.cambiar_estado.assert_not_called()
 
-    def test_motivo_se_recorta_antes_de_guardar(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_reason_is_trimmed_before_saving(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
-        svc.cambiar_estado_manual(1, "cancelada", "  Equipo dado de baja  ", make_usuario())
+        svc.cambiar_estado_manual(1, "cancelada", "  Equipo dado de baja  ", make_user())
 
         args, _ = repo.cambiar_estado.call_args
         self.assertEqual(args[2], "Equipo dado de baja")
 
     # ── Validación del estado destino ─────────────────────────────────────
 
-    def test_estado_invalido_lanza_error(self):
-        solicitud = make_solicitud(id=1, estado="pendiente")
+    def test_invalid_status_raises_error(self):
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "archivada", "Motivo válido", make_usuario())
+            svc.cambiar_estado_manual(1, "archivada", "Motivo válido", make_user())
 
         self.assertIn("archivada", str(cm.exception))
         repo.cambiar_estado.assert_not_called()
 
-    def test_solicitud_inexistente_lanza_error(self):
+    def test_nonexistent_request_raises_error(self):
         svc, repo = self._service(solicitud=None)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(999, "cancelada", "Motivo válido", make_usuario())
+            svc.cambiar_estado_manual(999, "cancelada", "Motivo válido", make_user())
 
         self.assertIn("no encontrada", str(cm.exception))
         repo.cambiar_estado.assert_not_called()
 
     # ── Transiciones de estado permitidas / no permitidas ──────────────────
 
-    def test_transiciones_permitidas_se_ejecutan_correctamente(self):
+    def test_allowed_status_transitions_execute_successfully(self):
         casos = [
             ("pendiente", "en_proceso"),
             ("pendiente", "cancelada"),
@@ -96,50 +96,50 @@ class TestCambiarEstadoManual(unittest.TestCase):
 
         for estado_actual, nuevo_estado in casos:
             with self.subTest(de=estado_actual, a=nuevo_estado):
-                solicitud = make_solicitud(id=1, estado=estado_actual)
+                solicitud = make_request(id=1, estado=estado_actual)
                 svc, repo = self._service(solicitud)
 
-                result = svc.cambiar_estado_manual(1, nuevo_estado, "Motivo justificado", make_usuario())
+                result = svc.cambiar_estado_manual(1, nuevo_estado, "Motivo justificado", make_user())
 
                 self.assertEqual(result["estado"], nuevo_estado)
                 repo.cambiar_estado.assert_called_once()
 
-    def test_transicion_no_permitida_lanza_error(self):
+    def test_disallowed_status_transition_raises_error(self):
         # pendiente -> completada no está permitido directamente
-        solicitud = make_solicitud(id=1, estado="pendiente")
+        solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "completada", "Motivo justificado", make_usuario())
+            svc.cambiar_estado_manual(1, "completada", "Motivo justificado", make_user())
 
         self.assertIn("pendiente", str(cm.exception))
         self.assertIn("completada", str(cm.exception))
         repo.cambiar_estado.assert_not_called()
 
-    def test_solicitud_completada_no_admite_cambios(self):
-        solicitud = make_solicitud(id=1, estado="completada")
+    def test_completed_request_does_not_allow_changes(self):
+        solicitud = make_request(id=1, estado="completada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "en_proceso", "Reabrir caso", make_usuario())
+            svc.cambiar_estado_manual(1, "en_proceso", "Reabrir caso", make_user())
 
         self.assertIn("completada", str(cm.exception))
         repo.cambiar_estado.assert_not_called()
 
-    def test_solicitud_cancelada_no_admite_cambios(self):
-        solicitud = make_solicitud(id=1, estado="cancelada")
+    def test_cancelled_request_does_not_allow_changes(self):
+        solicitud = make_request(id=1, estado="cancelada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.cambiar_estado_manual(1, "pendiente", "Reabrir caso", make_usuario())
+            svc.cambiar_estado_manual(1, "pendiente", "Reabrir caso", make_user())
 
         repo.cambiar_estado.assert_not_called()
 
     # ── El motivo queda asociado a la solicitud ────────────────────────────
 
-    def test_motivo_se_envia_al_repositorio_para_quedar_asociado(self):
-        solicitud = make_solicitud(id=1, estado="en_proceso")
-        usuario = make_usuario(rol="laboratorista")
+    def test_reason_is_sent_to_repository_to_be_associated(self):
+        solicitud = make_request(id=1, estado="en_proceso")
+        usuario = make_user(rol="laboratorista")
         svc, repo = self._service(solicitud)
 
         svc.cambiar_estado_manual(1, "cancelada", "El usuario retiró la solicitud", usuario)
