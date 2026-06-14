@@ -15,7 +15,7 @@ class TestManualStatusChange(unittest.TestCase):
         repo.get_by_id.return_value = solicitud
 
         if solicitud is not None:
-            def cambiar_estado(sol, nuevo_estado, motivo, usuario):
+            def change_status(sol, nuevo_estado, motivo, usuario):
                 sol.estado = nuevo_estado
                 return sol
             repo.change_status.side_effect = cambiar_estado
