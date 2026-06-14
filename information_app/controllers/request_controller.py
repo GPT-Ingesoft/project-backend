@@ -166,7 +166,7 @@ class RequestStatusDebugView(APIView):
         if not motivo:
             return Response({'error': "El campo 'motivo' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            solicitud = SolicitudServices().cambiar_estado_manual(solicitud_id, nuevo_estado, motivo, usuario=None)
+            solicitud = RequestServices().cambiar_estado_manual(solicitud_id, nuevo_estado, motivo, usuario=None)
             return Response({'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
