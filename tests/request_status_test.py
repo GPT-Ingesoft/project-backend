@@ -18,8 +18,8 @@ class TestManualStatusChange(unittest.TestCase):
             def change_status(sol, nuevo_estado, motivo, usuario):
                 sol.estado = nuevo_estado
                 return sol
-            repo.change_status.side_effect = cambiar_estado
-
+            repo.change_status.side_effect = change_status
+            
         svc = RequestServices()
         svc.repo = repo
         return svc, repo
@@ -60,7 +60,7 @@ class TestManualStatusChange(unittest.TestCase):
 
         svc.change_status_manually(1, "cancelada", "  Equipo dado de baja  ", make_user())
 
-        args, _ = repo.cambiar_estado.call_args
+        args, _ = repo.change_status.call_args
         self.assertEqual(args[2], "Equipo dado de baja")
 
     # ── Validación del estado destino ─────────────────────────────────────
