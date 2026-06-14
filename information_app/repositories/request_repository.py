@@ -5,14 +5,14 @@ ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 ESTADOS_CIERRE  = {'completada', 'cancelada'}
 
 
-class SolicitudRepository:
+class RequestRepository:
 
     # ── Consultas ──────────────────────────────────────────────────────────────
 
     def get_by_id(self, solicitud_id: int):
         return Solicitud.objects.filter(id=solicitud_id).first()
 
-    def get_horarios_laboratorio(self, laboratorio: str):
+    def get_lab_schedules(self, laboratorio: str):
         # RF_34
         return (
             HorarioAtencion.objects
@@ -20,7 +20,7 @@ class SolicitudRepository:
             .order_by('dia', 'hora_inicio')
         )
 
-    def get_laboratorios(self):
+    def get_laboratories(self):
         # RF_34
         return (
             HorarioAtencion.objects
@@ -31,7 +31,7 @@ class SolicitudRepository:
 
     # ── Escritura ──────────────────────────────────────────────────────────────
 
-    def aprobar(self, solicitud: Solicitud, usuario) -> Solicitud:
+    def aapprove(self, solicitud: Solicitud, usuario) -> Solicitud:
         # RF_35: cambia estado a 'en_proceso' y registra historial automáticamente
         estado_anterior = solicitud.estado
         solicitud.estado = 'en_proceso'
@@ -45,7 +45,7 @@ class SolicitudRepository:
         )
         return solicitud
 
-    def cambiar_estado(self, solicitud: Solicitud, nuevo_estado: str, motivo: str, usuario) -> Solicitud:
+    def change_status(self, solicitud: Solicitud, nuevo_estado: str, motivo: str, usuario) -> Solicitud:
         # RF_37: cambio manual con motivo obligatorio
         # RF_51: si el estado es de cierre, guarda fecha_cierre
         estado_anterior = solicitud.estado
@@ -62,7 +62,7 @@ class SolicitudRepository:
         )
         return solicitud
 
-    def crear_adjunto(self, solicitud: Solicitud, archivo, tipo: str, nombre: str,
+    def create_attachment(self, solicitud: Solicitud, archivo, tipo: str, nombre: str,
                       tamanio: int, descripcion: str, usuario) -> Adjunto:
         # RF_38: asocia archivo a la solicitud; fecha_carga se registra sola (auto_now_add)
         anexo = Anexo.objects.create(
