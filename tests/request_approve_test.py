@@ -16,10 +16,10 @@ class TestApproveRequest(unittest.TestCase):
         # Simula que el repositorio persiste el cambio y devuelve la
         # solicitud ya actualizada a 'en_proceso'.
         if solicitud is not None:
-            def aprobar(sol, usuario):
+            def approve(sol, usuario):
                 sol.estado = "en_proceso"
                 return sol
-            repo.aprobar.side_effect = aprobar
+            repo.approve.side_effect = aprobar
 
         svc = RequestServices()
         svc.repo = repo
@@ -32,19 +32,19 @@ class TestApproveRequest(unittest.TestCase):
         usuario = make_user(rol="laboratorista")
         svc, repo = self._service(solicitud)
 
-        result = svc.aprobar_solicitud(10, usuario)
+        result = svc.approve_request(10, usuario)
 
         self.assertEqual(result["estado"], "en_proceso")
         self.assertEqual(result["id"], 10)
         repo.get_by_id.assert_called_once_with(10)
-        repo.aprobar.assert_called_once_with(solicitud, usuario)
+        repo.approve.assert_called_once_with(solicitud, usuario)
 
     def test_approve_request_returns_formatted_data(self):
         solicitud = make_request(id=5, estado="pendiente", descripcion="Pantalla rota")
         usuario = make_user()
         svc, _ = self._service(solicitud)
 
-        result = svc.aprobar_solicitud(5, usuario)
+        result = svc.approve_request(5, usuario)
 
         for key in ("id", "estado", "prioridad", "descripcion", "equipo", "usuario", "created_at"):
             self.assertIn(key, result)
@@ -56,38 +56,38 @@ class TestApproveRequest(unittest.TestCase):
         svc, repo = self._service(solicitud=None)
 
         with self.assertRaises(ValueError) as cm:
-            svc.aprobar_solicitud(999, make_user())
+            svc.approve_request(999, make_user())
 
         self.assertIn("no encontrada", str(cm.exception))
-        repo.aprobar.assert_not_called()
+        repo.approve.assert_not_called()
 
     def test_approve_request_already_in_progress_raises_error(self):
         solicitud = make_request(id=1, estado="en_proceso")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.aprobar_solicitud(1, make_user())
+            svc.approve_request(1, make_user())
 
         self.assertIn("pendiente", str(cm.exception))
-        repo.aprobar.assert_not_called()
+        repo.approve.assert_not_called()
 
     def test_approve_completed_request_raises_error(self):
         solicitud = make_request(id=2, estado="completada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.aprobar_solicitud(2, make_user())
+            svc.approve_request(2, make_user())
 
-        repo.aprobar.assert_not_called()
+        repo.approve.assert_not_called()
 
     def test_approve_cancelled_request_raises_error(self):
         solicitud = make_request(id=3, estado="cancelada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.aprobar_solicitud(3, make_user())
+            svc.approve_request(3, make_user())
 
-        repo.aprobar.assert_not_called()
+        repo.approve.assert_not_called()
 
 
 if __name__ == "__main__":
