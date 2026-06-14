@@ -4,6 +4,7 @@ from rest_framework import request, status
 
 from information_app.services.equipment_services import EquipmentServices
 from information_app.services.user_services import UserServices
+from information_app.controllers.utils import *
 
 HTTP_200_OK = status.HTTP_200_OK
 HTTP_201_CREATED = status.HTTP_201_CREATED

@@ -1,35 +1,7 @@
 from django.urls import path
 
-from information_app.controllers.user_controller import (
-    OAuthLoginView,
-    OAuthCallbackView,
-    RegisterUserDebugView,
-    TokenRefreshView,
-    MeView,
-    UpdateProfileView,
-    RegisterUserView,
-    AssignRoleView,
-    ChangeStatusView,
-    ListUsersView,
-    AssignRoleDebugView,
-    ChangeStatusDebugView,
-    ListUsersDebugView,
-)
-from information_app.controllers.equipment_controller import (
-    EquipmentView,
-    EquipmentAvailabilityView,
-    EquipmentDecommissionView,
-    EquipmentCriticalityView,
-    EquipmentHistoryView,
-    EquipmentDebugView,
-    EquipmentAvailabilityDebugView,
-    EquipmentDecommissionDebugView,
-    EquipmentCriticalityDebugView,
-    RegisterEquipmentView,
-    RegisterEquipmentDebugView,
-    UpdateEquipmentView,
-    UpdateEquipmentDebugView
-)
+from information_app.controllers.user_controller import *
+from information_app.controllers.equipment_controller import *
 
 app_name = 'information_app'
 
