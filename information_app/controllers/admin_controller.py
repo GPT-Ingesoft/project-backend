@@ -25,7 +25,7 @@ class NotificationHistoryView(APIView):
             return Response({'error': 'Solo el laboratorista puede acceder al historial de notificaciones.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            historial = AdminServices().get_historial_notificaciones()
+            historial = AdminServices().get_notification_history()
             return Response({'total': len(historial), 'notificaciones': historial}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -50,7 +50,7 @@ class FailureReportView(APIView):
             return Response({'error': 'Solo el laboratorista puede acceder a este reporte.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            reporte = AdminServices().get_reporte_fallas()
+            reporte = AdminServices().get_failure_report()
             return Response({'total_equipos': len(reporte), 'equipos': reporte}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -75,7 +75,7 @@ class RepairTimeReportView(APIView):
             return Response({'error': 'Solo el laboratorista puede acceder a este reporte.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            reporte = AdminServices().get_reporte_tiempos_reparacion()
+            reporte = AdminServices().get_repair_time_report()
             return Response({'total_equipos': len(reporte), 'equipos': reporte}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -102,7 +102,7 @@ class OutOfServiceReportView(APIView):
 
         umbral_dias = request.query_params.get('umbral_dias', 30)
         try:
-            reporte = AdminServices().get_reporte_equipos_fuera_de_servicio(umbral_dias)
+            reporte = AdminServices().get_out_of_service_equipment_report(umbral_dias)
             return Response(reporte, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -128,7 +128,7 @@ class ActiveEquipmentDashboardView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-            equipos = AdminServices().get_equipos_activos()
+            equipos = AdminServices().get_active_equipment()
             return Response({'total': len(equipos), 'equipos': equipos}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -142,7 +142,7 @@ class NotificationHistoryDebugView(APIView):
 
     def get(self, request):
         try:
-            historial = AdminServices().get_historial_notificaciones()
+            historial = AdminServices().get_notification_history()
             return Response({'total': len(historial), 'notificaciones': historial}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -154,7 +154,7 @@ class FailureReportDebugView(APIView):
 
     def get(self, request):
         try:
-            reporte = AdminServices().get_reporte_fallas()
+            reporte = AdminServices().get_failure_report()
             return Response({'total_equipos': len(reporte), 'equipos': reporte}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -166,7 +166,7 @@ class RepairTimeReportDebugView(APIView):
 
     def get(self, request):
         try:
-            reporte = AdminServices().get_reporte_tiempos_reparacion()
+            reporte = AdminServices().get_repair_time_report()
             return Response({'total_equipos': len(reporte), 'equipos': reporte}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -179,7 +179,7 @@ class OutOfServiceReportDebugView(APIView):
     def get(self, request):
         umbral_dias = request.query_params.get('umbral_dias', 30)
         try:
-            reporte = AdminServices().get_reporte_equipos_fuera_de_servicio(umbral_dias)
+            reporte = AdminServices().get_out_of_service_equipment_report(umbral_dias)
             return Response(reporte, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -193,7 +193,7 @@ class ActiveEquipmentDashboardDebugView(APIView):
 
     def get(self, request):
         try:
-            equipos = AdminServices().get_equipos_activos()
+            equipos = AdminServices().get_active_equipment()
             return Response({'total': len(equipos), 'equipos': equipos}, status=status.HTTP_200_OK)
         except Exception:
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
