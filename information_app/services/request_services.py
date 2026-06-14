@@ -1,5 +1,5 @@
 from django.db import transaction
-from ..repositories.Solicitud_repository import SolicitudRepository
+from ..repositories.request_repository import RequestRepository
 
 ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 TIPOS_ADJUNTO_VALIDOS = {'imagen', 'documento', 'video', 'otro'}
@@ -12,14 +12,14 @@ TRANSICIONES_PERMITIDAS = {
 }
 
 
-class SolicitudServices:
+class RequestServices:
     def __init__(self):
-        self.repo = SolicitudRepository()
+        self.repo = RequestRepository()
 
     # ── RF_35: Aprobar solicitud → estado "En proceso" automático ─────────────
 
     @transaction.atomic
-    def aprobar_solicitud(self, solicitud_id: int, usuario) -> dict:
+    def approve_request(self, solicitud_id: int, usuario) -> dict:
         solicitud = self.repo.get_by_id(solicitud_id)
         if not solicitud:
             raise ValueError("Solicitud no encontrada.")
@@ -29,25 +29,25 @@ class SolicitudServices:
                 f"Estado actual: '{solicitud.estado}'."
             )
         solicitud = self.repo.aprobar(solicitud, usuario)
-        return self._format_solicitud(solicitud)
+        return self._format_request(solicitud)
 
     # ── RF_34: Consultar horario del laboratorio ───────────────────────────────
 
-    def get_horario_laboratorio(self, laboratorio: str) -> list:
+    def get_lab_schedule(self, laboratorio: str) -> list:
         if not laboratorio or not laboratorio.strip():
             raise ValueError("Debe indicar el nombre del laboratorio.")
-        horarios = self.repo.get_horarios_laboratorio(laboratorio.strip())
+        horarios = self.repo.get_lab_schedules(laboratorio.strip())
         if not horarios.exists():
             raise ValueError(f"No se encontraron horarios disponibles para '{laboratorio}'.")
-        return [self._format_horario(h) for h in horarios]
+        return [self._format_schedule(h) for h in horarios]
 
-    def get_laboratorios_disponibles(self) -> list:
-        return list(self.repo.get_laboratorios())
+    def get_available_laboratories(self) -> list:
+        return list(self.repo.get_laboratories())
 
     # ── RF_37: Cambio manual de estado con motivo obligatorio ─────────────────
     
     @transaction.atomic    
-    def cambiar_estado_manual(self, solicitud_id: int, nuevo_estado: str, motivo: str, usuario) -> dict:
+    def change_status_manually(self, solicitud_id: int, nuevo_estado: str, motivo: str, usuario) -> dict:
         if not motivo or not motivo.strip():
             raise ValueError("Debe especificar un motivo para el cambio de estado. El campo 'motivo' es obligatorio.")
         if nuevo_estado not in ESTADOS_VALIDOS:
@@ -66,13 +66,13 @@ class SolicitudServices:
                 f"No es posible cambiar de '{solicitud.estado}' a '{nuevo_estado}'. "
                 f"Transiciones permitidas: {', '.join(sorted(transiciones))}."
             )
-        solicitud = self.repo.cambiar_estado(solicitud, nuevo_estado, motivo.strip(), usuario)
-        return self._format_solicitud(solicitud)
+        solicitud = self.repo.change_status(solicitud, nuevo_estado, motivo.strip(), usuario)
+        return self._format_request(solicitud)
 
     # ── RF_38: Subir archivos adjuntos ────────────────────────────────────────
 
     @transaction.atomic
-    def subir_adjunto(self, solicitud_id: int, archivo, tipo: str, nombre: str,
+    def upload_attachment(self, solicitud_id: int, archivo, tipo: str, nombre: str,
                       tamanio: int, descripcion: str, usuario) -> dict:
         if not archivo:
             raise ValueError("Debe adjuntar un archivo.")
@@ -90,17 +90,17 @@ class SolicitudServices:
             raise ValueError("Solicitud no encontrada.")
         if solicitud.estado in ('completada', 'cancelada'):
             raise ValueError(f"No se pueden adjuntar archivos a una solicitud en estado '{solicitud.estado}'.")
-        adjunto = self.repo.crear_adjunto(
+        adjunto = self.repo.create_attachment(
             solicitud=solicitud, archivo=archivo, tipo=tipo,
             nombre=nombre.strip(), tamanio=tamanio,
             descripcion=descripcion.strip(), usuario=usuario,
         )
-        return self._format_adjunto(adjunto)
+        return self._format_attachment(adjunto)
 
     # ── Formatters ─────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _format_solicitud(solicitud) -> dict:
+    def _format_request(solicitud) -> dict:
         return {
             'id':          solicitud.id,
             'estado':      solicitud.estado,
@@ -112,7 +112,7 @@ class SolicitudServices:
         }
 
     @staticmethod
-    def _format_horario(horario) -> dict:
+    def _format_schedule(horario) -> dict:
         return {
             'id':          horario.id,
             'laboratorio': horario.laboratorio,
@@ -123,7 +123,7 @@ class SolicitudServices:
         }
 
     @staticmethod
-    def _format_adjunto(adjunto) -> dict:
+    def _format_attachment(adjunto) -> dict:
         return {
             'adjunto_id':     adjunto.id,
             'nombre_archivo': adjunto.nombre_archivo,
