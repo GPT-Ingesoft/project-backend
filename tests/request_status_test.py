@@ -18,7 +18,7 @@ class TestManualStatusChange(unittest.TestCase):
             def cambiar_estado(sol, nuevo_estado, motivo, usuario):
                 sol.estado = nuevo_estado
                 return sol
-            repo.cambiar_estado.side_effect = cambiar_estado
+            repo.change_status.side_effect = cambiar_estado
 
         svc = RequestServices()
         svc.repo = repo
@@ -31,34 +31,34 @@ class TestManualStatusChange(unittest.TestCase):
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "cancelada", "", make_user())
+            svc.change_status_manually(1, "cancelada", "", make_user())
 
         self.assertIn("motivo", str(cm.exception).lower())
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     def test_reason_with_only_spaces_raises_error(self):
         solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.cambiar_estado_manual(1, "cancelada", "   ", make_user())
+            svc.change_status_manually(1, "cancelada", "   ", make_user())
 
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     def test_none_reason_raises_error(self):
         solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.cambiar_estado_manual(1, "cancelada", None, make_user())
+            svc.change_status_manually(1, "cancelada", None, make_user())
 
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     def test_reason_is_trimmed_before_saving(self):
         solicitud = make_request(id=1, estado="pendiente")
         svc, repo = self._service(solicitud)
 
-        svc.cambiar_estado_manual(1, "cancelada", "  Equipo dado de baja  ", make_user())
+        svc.change_status_manually(1, "cancelada", "  Equipo dado de baja  ", make_user())
 
         args, _ = repo.cambiar_estado.call_args
         self.assertEqual(args[2], "Equipo dado de baja")
@@ -70,19 +70,19 @@ class TestManualStatusChange(unittest.TestCase):
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "archivada", "Motivo válido", make_user())
+            svc.change_status_manually(1, "archivada", "Motivo válido", make_user())
 
         self.assertIn("archivada", str(cm.exception))
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     def test_nonexistent_request_raises_error(self):
         svc, repo = self._service(solicitud=None)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(999, "cancelada", "Motivo válido", make_user())
+            svc.change_status_manually(999, "cancelada", "Motivo válido", make_user())
 
         self.assertIn("no encontrada", str(cm.exception))
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     # ── Transiciones de estado permitidas / no permitidas ──────────────────
 
@@ -99,10 +99,10 @@ class TestManualStatusChange(unittest.TestCase):
                 solicitud = make_request(id=1, estado=estado_actual)
                 svc, repo = self._service(solicitud)
 
-                result = svc.cambiar_estado_manual(1, nuevo_estado, "Motivo justificado", make_user())
+                result = svc.change_status_manually(1, nuevo_estado, "Motivo justificado", make_user())
 
                 self.assertEqual(result["estado"], nuevo_estado)
-                repo.cambiar_estado.assert_called_once()
+                repo.change_status.assert_called_once()
 
     def test_disallowed_status_transition_raises_error(self):
         # pendiente -> completada no está permitido directamente
@@ -110,30 +110,30 @@ class TestManualStatusChange(unittest.TestCase):
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "completada", "Motivo justificado", make_user())
+            svc.change_status_manually(1, "completada", "Motivo justificado", make_user())
 
         self.assertIn("pendiente", str(cm.exception))
         self.assertIn("completada", str(cm.exception))
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     def test_completed_request_does_not_allow_changes(self):
         solicitud = make_request(id=1, estado="completada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError) as cm:
-            svc.cambiar_estado_manual(1, "en_proceso", "Reabrir caso", make_user())
+            svc.change_status_manually(1, "en_proceso", "Reabrir caso", make_user())
 
         self.assertIn("completada", str(cm.exception))
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     def test_cancelled_request_does_not_allow_changes(self):
         solicitud = make_request(id=1, estado="cancelada")
         svc, repo = self._service(solicitud)
 
         with self.assertRaises(ValueError):
-            svc.cambiar_estado_manual(1, "pendiente", "Reabrir caso", make_user())
+            svc.change_status_manually(1, "pendiente", "Reabrir caso", make_user())
 
-        repo.cambiar_estado.assert_not_called()
+        repo.change_status.assert_not_called()
 
     # ── El motivo queda asociado a la solicitud ────────────────────────────
 
@@ -142,9 +142,9 @@ class TestManualStatusChange(unittest.TestCase):
         usuario = make_user(rol="laboratorista")
         svc, repo = self._service(solicitud)
 
-        svc.cambiar_estado_manual(1, "cancelada", "El usuario retiró la solicitud", usuario)
+        svc.change_status_manually(1, "cancelada", "El usuario retiró la solicitud", usuario)
 
-        repo.cambiar_estado.assert_called_once_with(
+        repo.change_status.assert_called_once_with(
             solicitud, "cancelada", "El usuario retiró la solicitud", usuario
         )
 
