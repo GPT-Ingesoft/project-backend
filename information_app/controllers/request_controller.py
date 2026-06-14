@@ -1,4 +1,4 @@
-from services.solicitud_services import SolicitudServices
+from services.request_services import RequestServices
 from services.user_services import UserServices
 
 from rest_framework.views    import APIView
@@ -11,7 +11,7 @@ from rest_framework          import status
 # PATCH /api/solicitudes/<solicitud_id>/aprobar/
 # =============================================================================
 
-class SolicitudAprobarView(APIView):
+class RequestApproveView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -25,7 +25,7 @@ class SolicitudAprobarView(APIView):
             return Response({'error': 'Solo el laboratorista puede aprobar solicitudes.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            solicitud = SolicitudServices().aprobar_solicitud(solicitud_id, usuario)
+            solicitud = RequestServices().aprobar_solicitud(solicitud_id, usuario)
             return Response({'message': 'Solicitud aprobada. Estado actualizado a En proceso.', 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -39,7 +39,7 @@ class SolicitudAprobarView(APIView):
 # GET /api/solicitudes/horario/   → devuelve lista de laboratorios
 # =============================================================================
 
-class HorarioLaboratorioView(APIView):
+class LabScheduleView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -51,7 +51,7 @@ class HorarioLaboratorioView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
         laboratorio = request.query_params.get('laboratorio', '').strip()
-        srv = SolicitudServices()
+        srv = RequestServices()
         try:
             if not laboratorio:
                 laboratorios = srv.get_laboratorios_disponibles()
@@ -70,7 +70,7 @@ class HorarioLaboratorioView(APIView):
 # Body JSON: { "estado": "completada", "motivo": "Reparación finalizada." }
 # =============================================================================
 
-class SolicitudEstadoView(APIView):
+class RequestStatusView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -90,7 +90,7 @@ class SolicitudEstadoView(APIView):
             return Response({'error': "El campo 'motivo' es obligatorio al cambiar el estado manualmente."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            solicitud = SolicitudServices().cambiar_estado_manual(solicitud_id, nuevo_estado, motivo, usuario)
+            solicitud = RequestServices().cambiar_estado_manual(solicitud_id, nuevo_estado, motivo, usuario)
             return Response({'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -104,7 +104,7 @@ class SolicitudEstadoView(APIView):
 # Body multipart/form-data: archivo (file), tipo, nombre_archivo, descripcion
 # =============================================================================
 
-class SolicitudAdjuntoView(APIView):
+class RequestAttachmentView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -126,7 +126,7 @@ class SolicitudAdjuntoView(APIView):
             nombre = archivo.name
 
         try:
-            adjunto = SolicitudServices().subir_adjunto(
+            adjunto = RequestServices().subir_adjunto(
                 solicitud_id=solicitud_id, archivo=archivo, tipo=tipo,
                 nombre=nombre, tamanio=archivo.size,
                 descripcion=descripcion, usuario=usuario,
@@ -140,13 +140,13 @@ class SolicitudAdjuntoView(APIView):
 
 #################### DEBUG ####################
 
-class SolicitudAprobarDebugView(APIView):
+class RequestApproveDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
     def patch(self, request, solicitud_id):
         try:
-            solicitud = SolicitudServices().aprobar_solicitud(solicitud_id, usuario=None)
+            solicitud = RequestServices().aprobar_solicitud(solicitud_id, usuario=None)
             return Response({'message': 'Solicitud aprobada.', 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -154,7 +154,7 @@ class SolicitudAprobarDebugView(APIView):
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class SolicitudEstadoDebugView(APIView):
+class RequestStatusDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -174,7 +174,7 @@ class SolicitudEstadoDebugView(APIView):
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class SolicitudAdjuntoDebugView(APIView):
+class RequestAttachmentDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
@@ -188,7 +188,7 @@ class SolicitudAdjuntoDebugView(APIView):
         if not nombre:
             nombre = archivo.name
         try:
-            adjunto = SolicitudServices().subir_adjunto(
+            adjunto = RequestServices().subir_adjunto(
                 solicitud_id=solicitud_id, archivo=archivo, tipo=tipo,
                 nombre=nombre, tamanio=archivo.size,
                 descripcion=descripcion, usuario=None,
@@ -200,13 +200,13 @@ class SolicitudAdjuntoDebugView(APIView):
             return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class HorarioLaboratorioDebugView(APIView):
+class LabScheduleDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
     def get(self, request):
         laboratorio = request.query_params.get('laboratorio', '').strip()
-        srv = SolicitudServices()
+        srv = RequestServices()
         try:
             if not laboratorio:
                 return Response({'laboratorios': srv.get_laboratorios_disponibles()}, status=status.HTTP_200_OK)
