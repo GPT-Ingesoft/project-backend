@@ -1,4 +1,4 @@
-from ..repositories.SolicitudRepository import SolicitudRepository
+from ..repositories.Solicitud_repository import SolicitudRepository
 
 ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 TIPOS_ADJUNTO_VALIDOS = {'imagen', 'documento', 'video', 'otro'}
