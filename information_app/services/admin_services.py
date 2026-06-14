@@ -9,22 +9,22 @@ class AdminServices:
 
     # ── RF_47: Historial de notificaciones ────────────────────────────────────
 
-    def get_historial_notificaciones(self) -> list:
-        return [self._format_notificacion(n) for n in self.repo.get_historial_notificaciones()]
+    def get_notification_history(self) -> list:
+        return [self._format_notification(n) for n in self.repo.get_notification_history()]
 
     # ── RF_50: Reporte de fallas ──────────────────────────────────────────────
 
-    def get_reporte_fallas(self) -> list:
-        return [self._format_falla(e) for e in self.repo.get_reporte_fallas()]
+    def get_failure_report(self) -> list:
+        return [self._format_failure(e) for e in self.repo.get_failure_report()]
 
     # ── RF_51: Reporte de tiempos de reparación ───────────────────────────────
 
-    def get_reporte_tiempos_reparacion(self) -> list:
-        return [self._format_tiempo_reparacion(e) for e in self.repo.get_reporte_tiempos_reparacion()]
+    def get_repair_time_report(self) -> list:
+        return [self._format_repair_time(e) for e in self.repo.get_repair_time_report()]
 
     # ── RF_52: Reporte de equipos fuera de servicio ───────────────────────────
 
-    def get_reporte_equipos_fuera_de_servicio(self, umbral_dias) -> dict:
+    def get_out_of_service_equipment_report(self, umbral_dias) -> dict:
         try:
             umbral = int(umbral_dias)
             if umbral < 0:
@@ -34,22 +34,22 @@ class AdminServices:
                 f"El parámetro 'umbral_dias' debe ser un número entero positivo. "
                 f"Valor recibido: '{umbral_dias}'."
             )
-        equipos = self.repo.get_equipos_fuera_de_servicio(umbral)
+        equipos = self.repo.get_out_of_service_equipment_report(umbral)
         return {
             'umbral_dias': umbral,
             'total':       len(equipos),
-            'equipos':     [self._format_fuera_de_servicio(e) for e in equipos],
+            'equipos':     [self._format_out_of_service(e) for e in equipos],
         }
 
     # ── RF_53: Equipos activos ────────────────────────────────────────────────
 
-    def get_equipos_activos(self) -> list:
-        return [self._format_equipo_activo(e) for e in self.repo.get_equipos_activos()]
+    def get_active_equipment(self) -> list:
+        return [self._format_active_equipment(e) for e in self.repo.get_active_equipment()]
 
     # ── Formatters ─────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _format_notificacion(n) -> dict:
+    def _format_notification(n) -> dict:
         return {
             'id':           n.id,
             'tipo':         n.get_tipo_display(),
@@ -63,7 +63,7 @@ class AdminServices:
         }
 
     @staticmethod
-    def _format_falla(e) -> dict:
+    def _format_failure(e) -> dict:
         return {
             'id':                e['id'],
             'nombre':            e['nombre'],
@@ -74,7 +74,7 @@ class AdminServices:
         }
 
     @staticmethod
-    def _format_tiempo_reparacion(e) -> dict:
+    def _format_repair_time(e) -> dict:
         promedio = e['promedio_horas']
         total_horas = round(promedio.total_seconds() / 3600, 2) if promedio else None
         return {
@@ -86,7 +86,7 @@ class AdminServices:
         }
 
     @staticmethod
-    def _format_fuera_de_servicio(e) -> dict:
+    def _format_out_of_service(e) -> dict:
         return {
             'id':                e['id'],
             'nombre':            e['nombre'],
@@ -99,7 +99,7 @@ class AdminServices:
         }
 
     @staticmethod
-    def _format_equipo_activo(e) -> dict:
+    def _format_active_equipment(e) -> dict:
         return {
             'id':        e['id'],
             'nombre':    e['nombre'],
