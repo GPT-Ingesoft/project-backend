@@ -34,7 +34,7 @@ class AdminServices:
                 f"El parámetro 'umbral_dias' debe ser un número entero positivo. "
                 f"Valor recibido: '{umbral_dias}'."
             )
-        equipos = self.repo.get_out_of_service_equipment_report(umbral)
+        equipos = self.repo.get_out_of_service_equipment(umbral)
         return {
             'umbral_dias': umbral,
             'total':       len(equipos),
