@@ -45,7 +45,7 @@ spec.loader.exec_module(module)
 SolicitudServices = module.SolicitudServices
 
 
-def make_usuario(nombre="Ana Torres", correo="ana@test.com", rol="docente"):
+def make_user(nombre="Ana Torres", correo="ana@test.com", rol="docente"):
     u = MagicMock()
     u.id = 1
     u.nombre = nombre
@@ -54,14 +54,14 @@ def make_usuario(nombre="Ana Torres", correo="ana@test.com", rol="docente"):
     return u
 
 
-def make_equipo(nombre="Osciloscopio"):
+def make_equipment(nombre="Osciloscopio"):
     e = MagicMock()
     e.id = 1
     e.nombre = nombre
     return e
 
 
-def make_solicitud(
+def make_request(
     id=1,
     estado="pendiente",
     prioridad="media",
@@ -81,7 +81,7 @@ def make_solicitud(
     return s
 
 
-def make_adjunto(
+def make_attachment(
     id=1,
     nombre_archivo="diagnostico.pdf",
     tipo="documento",
