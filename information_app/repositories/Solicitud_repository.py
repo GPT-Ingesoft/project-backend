@@ -5,7 +5,7 @@ ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 ESTADOS_CIERRE  = {'completada', 'cancelada'}
 
 
-class SolicitudRepository:
+class Solicitud_repository:
 
     # ── Consultas ──────────────────────────────────────────────────────────────
 
