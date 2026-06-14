@@ -31,7 +31,7 @@ class RequestRepository:
 
     # ── Escritura ──────────────────────────────────────────────────────────────
 
-    def aapprove(self, solicitud: Solicitud, usuario) -> Solicitud:
+    def approve(self, solicitud: Solicitud, usuario) -> Solicitud:
         # RF_35: cambia estado a 'en_proceso' y registra historial automáticamente
         estado_anterior = solicitud.estado
         solicitud.estado = 'en_proceso'
