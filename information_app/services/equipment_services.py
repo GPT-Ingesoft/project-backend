@@ -68,6 +68,83 @@ class EquipmentServices:
             if value is None or str(value).strip() == '':
                 raise ValueError(f"Field '{field}' is required and cannot be empty.")
 
+    @transaction.atomic
+    def update_equipment(self, equipment_id: int, data: dict) -> dict:
+
+        if 'serial_number' in data:
+            raise ValueError("Field 'serial_number' cannot be modified.")
+
+        equipment = self.equipment_repository.get_by_id(equipment_id)
+        if not equipment:
+            raise ValueError("Equipment not found.")
+
+        if equipment.estado == 'dado_de_baja':
+            raise ValueError(
+                f"Equipment '{equipment.nombre}' is decommissioned and cannot be modified."
+            )
+
+        fields_to_update = {}
+
+        if 'name' in data:
+            name = str(data['name']).strip()
+            if not name:
+                raise ValueError("Field 'name' cannot be empty.")
+            fields_to_update['nombre'] = name
+
+        if 'inventory_code' in data:
+            inventory_code = str(data['inventory_code']).strip()
+            if not inventory_code:
+                raise ValueError("Field 'inventory_code' cannot be empty.")
+            if self.equipment_repository.inventory_code_exists_for_other(inventory_code, equipment_id):
+                raise ValueError(
+                    f"Inventory code '{inventory_code}' is already registered. "
+                    "Please use a different code."
+                )
+            fields_to_update['codigo_inventario'] = inventory_code
+
+        if 'model' in data:
+            model = str(data['model']).strip()
+            if not model:
+                raise ValueError("Field 'model' cannot be empty.")
+            fields_to_update['modelo'] = model
+
+        if 'brand' in data:
+            brand = str(data['brand']).strip()
+            if not brand:
+                raise ValueError("Field 'brand' cannot be empty.")
+            fields_to_update['marca'] = brand
+
+        if 'location' in data:
+            location = str(data['location']).strip()
+            if not location:
+                raise ValueError("Field 'location' cannot be empty.")
+            fields_to_update['ubicacion'] = location
+
+        if 'status' in data:
+            st = str(data['status']).strip().lower()
+            if st not in VALID_STATUSES:
+                raise ValueError(
+                    f"Status '{st}' is not valid. "
+                    f"Allowed values: {', '.join(sorted(VALID_STATUSES))}."
+                )
+            fields_to_update['estado'] = st
+
+        if 'criticality' in data:
+            criticality = str(data['criticality']).strip().lower()
+            if criticality not in VALID_CRITICALITIES:
+                raise ValueError(
+                    f"Criticality '{criticality}' is not valid. "
+                    f"Allowed values: {', '.join(sorted(VALID_CRITICALITIES))}."
+                )
+            fields_to_update['criticidad'] = criticality
+
+        if not fields_to_update:
+            raise ValueError("No valid fields provided for update.")
+
+        equipment = self.equipment_repository.update(equipment, fields_to_update)
+        return self.format_equipment_data(equipment)
+
+
     # ── Module -> Equipment management ────────────────────────────────────────────────
     @staticmethod
     def format_equipment_data(equipment) -> dict:
