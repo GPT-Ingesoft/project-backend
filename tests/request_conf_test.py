@@ -24,25 +24,25 @@ create_modules(
 
     "information_app",
     "information_app.repositories",
-    "information_app.repositories.Solicitud_repository",
+    "information_app.repositories.request_repository",
 )
 
 sys.modules["django.db"].transaction = _Transaction
 sys.modules["django.utils"].timezone = MagicMock()
-sys.modules["information_app.repositories.Solicitud_repository"].SolicitudRepository = MagicMock
+sys.modules["information_app.repositories.Request_repository"].RequestRepository = MagicMock
 
-service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "solicitud_services.py"
+service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "request_services.py"
 
 spec = importlib.util.spec_from_file_location(
-    "information_app.services.solicitud_services",
+    "information_app.services.request_services",
     service_path,
 )
 
 module = importlib.util.module_from_spec(spec)
 module.__package__ = "information_app.services"
-sys.modules["information_app.services.solicitud_services"] = module
+sys.modules["information_app.services.request_services"] = module
 spec.loader.exec_module(module)
-SolicitudServices = module.SolicitudServices
+SolicitudServices = module.RequestServices
 
 
 def make_user(nombre="Ana Torres", correo="ana@test.com", rol="docente"):
@@ -74,8 +74,8 @@ def make_request(
     s.estado = estado
     s.prioridad = prioridad
     s.descripcion = descripcion
-    s.usuario = usuario or make_usuario()
-    s.equipo = equipo or make_equipo()
+    s.usuario = usuario or make_user()
+    s.equipo = equipo or make_equipment()
     s.fecha_creacion = datetime(2024, 1, 1, tzinfo=timezone.utc)
     s.fecha_cierre = None
     return s
