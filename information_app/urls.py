@@ -29,7 +29,7 @@ from information_app.controllers.equipment_controller import (
     RegisterEquipmentDebugView,
 )
 # ── NUEVOS IMPORTS (RF_34, RF_35, RF_37, RF_38) ───────────────────────────────
-from .controllers.RequestController import (
+from information_app.controllers.request_controller import (
     RequestApproveView,
     LabScheduleView,
     RequestStatusView,
@@ -40,7 +40,7 @@ from .controllers.RequestController import (
     LabScheduleDebugView,
 )
 # ── NUEVOS IMPORTS (RF_47, RF_50, RF_51, RF_52, RF_53) ───────────────────────
-from .controllers.AdminController import (
+from information_app.controllers.admin_controller import (
     NotificationHistoryView,
     FailureReportView,
     RepairTimeReportView,
