@@ -1,5 +1,5 @@
-from services.request_services import RequestServices
-from services.user_services import UserServices
+from information_app.services.request_services import RequestServices
+from information_app.services.user_services import UserServices
 
 from rest_framework.views    import APIView
 from rest_framework.response import Response
@@ -25,7 +25,7 @@ class RequestApproveView(APIView):
             return Response({'error': 'Solo el laboratorista puede aprobar solicitudes.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            solicitud = RequestServices().aprobar_solicitud(solicitud_id, usuario)
+            solicitud = RequestServices().approve_request(solicitud_id, usuario)
             return Response({'message': 'Solicitud aprobada. Estado actualizado a En proceso.', 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -54,9 +54,9 @@ class LabScheduleView(APIView):
         srv = RequestServices()
         try:
             if not laboratorio:
-                laboratorios = srv.get_laboratorios_disponibles()
+                laboratorios = srv.get_available_laboratories()
                 return Response({'laboratorios': laboratorios}, status=status.HTTP_200_OK)
-            horarios = srv.get_horario_laboratorio(laboratorio)
+            horarios = srv.get_lab_schedule(laboratorio)
             return Response({'laboratorio': laboratorio, 'horarios': horarios}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -90,7 +90,7 @@ class RequestStatusView(APIView):
             return Response({'error': "El campo 'motivo' es obligatorio al cambiar el estado manualmente."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            solicitud = RequestServices().cambiar_estado_manual(solicitud_id, nuevo_estado, motivo, usuario)
+            solicitud = RequestServices().change_status_manually(solicitud_id, nuevo_estado, motivo, usuario)
             return Response({'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -126,7 +126,7 @@ class RequestAttachmentView(APIView):
             nombre = archivo.name
 
         try:
-            adjunto = RequestServices().subir_adjunto(
+            adjunto = RequestServices().upload_attachment(
                 solicitud_id=solicitud_id, archivo=archivo, tipo=tipo,
                 nombre=nombre, tamanio=archivo.size,
                 descripcion=descripcion, usuario=usuario,
@@ -146,7 +146,7 @@ class RequestApproveDebugView(APIView):
 
     def patch(self, request, solicitud_id):
         try:
-            solicitud = RequestServices().aprobar_solicitud(solicitud_id, usuario=None)
+            solicitud = RequestServices().approve_request(solicitud_id, usuario=None)
             return Response({'message': 'Solicitud aprobada.', 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -166,7 +166,7 @@ class RequestStatusDebugView(APIView):
         if not motivo:
             return Response({'error': "El campo 'motivo' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            solicitud = RequestServices().cambiar_estado_manual(solicitud_id, nuevo_estado, motivo, usuario=None)
+            solicitud = RequestServices().change_status_manually(solicitud_id, nuevo_estado, motivo, usuario=None)
             return Response({'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -188,7 +188,7 @@ class RequestAttachmentDebugView(APIView):
         if not nombre:
             nombre = archivo.name
         try:
-            adjunto = RequestServices().subir_adjunto(
+            adjunto = RequestServices().upload_attachment(
                 solicitud_id=solicitud_id, archivo=archivo, tipo=tipo,
                 nombre=nombre, tamanio=archivo.size,
                 descripcion=descripcion, usuario=None,
@@ -209,8 +209,8 @@ class LabScheduleDebugView(APIView):
         srv = RequestServices()
         try:
             if not laboratorio:
-                return Response({'laboratorios': srv.get_laboratorios_disponibles()}, status=status.HTTP_200_OK)
-            horarios = srv.get_horario_laboratorio(laboratorio)
+                return Response({'laboratorios': srv.get_available_laboratories()}, status=status.HTTP_200_OK)
+            horarios = srv.get_lab_schedule(laboratorio)
             return Response({'laboratorio': laboratorio, 'horarios': horarios}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
