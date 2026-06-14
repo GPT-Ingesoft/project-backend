@@ -1,5 +1,5 @@
-from services.admin_services import AdminServices
-from services.user_services import UserServices
+from information_app.services.admin_services import AdminServices, UMBRAL_DIAS_DEFAULT
+from information_app.services.user_services import UserServices
 
 from rest_framework.views    import APIView
 from rest_framework.response import Response
@@ -100,7 +100,7 @@ class OutOfServiceReportView(APIView):
         if not UserServices.is_lab_technician(usuario):
             return Response({'error': 'Solo el laboratorista puede acceder a este reporte.'}, status=status.HTTP_403_FORBIDDEN)
 
-        umbral_dias = request.query_params.get('umbral_dias', 30)
+        umbral_dias = request.query_params.get('umbral_dias', UMBRAL_DIAS_DEFAULT)
         try:
             reporte = AdminServices().get_out_of_service_equipment_report(umbral_dias)
             return Response(reporte, status=status.HTTP_200_OK)
