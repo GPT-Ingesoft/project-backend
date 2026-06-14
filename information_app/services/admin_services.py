@@ -1,4 +1,4 @@
-from ..repositories.AdminRepository import AdminRepository
+from ..repositories.admin_repository import AdminRepository
 
 UMBRAL_DIAS_DEFAULT = 30
 
