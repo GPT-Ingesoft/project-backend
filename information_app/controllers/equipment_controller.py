@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import request, status
 
 from information_app.services.equipment_services import EquipmentServices
 from information_app.services.user_services import UserServices
@@ -30,7 +30,6 @@ class EquipmentView(APIView):
             return Response({'equipment': equipment}, status=HTTP_200_OK)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class RegisterEquipmentView(APIView):
     def post(self, request):
@@ -66,6 +65,40 @@ class RegisterEquipmentView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
+class UpdateEquipmentView(APIView):
+    
+    def patch(self, request, equipment_id):
+        user_service = UserServices()
+        try:
+            user = user_service.extract_user_from_token(request)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
+
+        if not UserServices.is_lab_technician(user):
+            return Response({'error': 'Only lab technicians can update equipment.'}, status=HTTP_403_FORBIDDEN)
+
+        try:
+            data = request.data
+            if not isinstance(data, dict):
+                raise ValueError
+        except Exception:
+            return Response(
+                {'error': 'The request body must be a valid JSON object. '
+                          'Make sure to include the header Content-Type: application/json'},
+                status=HTTP_400_BAD_REQUEST,
+            )
+
+        service = EquipmentServices()
+        try:
+            equipment = service.update_equipment(equipment_id, data)
+            return Response(
+                {'message': 'Equipment updated successfully.', 'equipment': equipment},
+                status=HTTP_200_OK,
+            )
+        except ValueError as e:
+            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
 class EquipmentAvailabilityView(APIView):
 
@@ -79,7 +112,6 @@ class EquipmentAvailabilityView(APIView):
             return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class EquipmentDecommissionView(APIView):
 
@@ -107,7 +139,6 @@ class EquipmentDecommissionView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class EquipmentCriticalityView(APIView):
 
     # ── PATCH /api/equipment/<id>/criticality/ ─────────────────────────────────
@@ -134,7 +165,6 @@ class EquipmentCriticalityView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class EquipmentHistoryView(APIView):
 
     # ── GET /api/equipment/<id>/history/ ───────────────────────────────────────
@@ -157,7 +187,6 @@ class EquipmentHistoryView(APIView):
                 status=HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
 #################### DEBUG ####################
 
 class EquipmentDebugView(APIView):
@@ -172,7 +201,6 @@ class EquipmentDebugView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class EquipmentAvailabilityDebugView(APIView):
 
     # ── GET /api/equipment/<id>/availability_debug/ ────────────────────────────
@@ -186,7 +214,6 @@ class EquipmentAvailabilityDebugView(APIView):
             return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class EquipmentDecommissionDebugView(APIView):
 
@@ -206,7 +233,6 @@ class EquipmentDecommissionDebugView(APIView):
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class EquipmentCriticalityDebugView(APIView):
 
     # ── PATCH /api/equipment/<id>/criticality_debug/ ───────────────────────────
@@ -224,7 +250,6 @@ class EquipmentCriticalityDebugView(APIView):
             return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class RegisterEquipmentDebugView(APIView):
     def post(self, request):
@@ -250,3 +275,31 @@ class RegisterEquipmentDebugView(APIView):
             return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
         except Exception:
             return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class UpdateEquipmentDebugView(APIView):
+    
+    def patch(self, request, equipment_id):
+        # Debug - RF_05/RF_06 without authentication
+        try:
+            data = request.data
+            if not isinstance(data, dict):
+                raise ValueError
+        except Exception:
+            return Response(
+                {'error': 'The request body must be a valid JSON object. '
+                          'Make sure to include the header Content-Type: application/json'},
+                status=HTTP_400_BAD_REQUEST,
+            )
+
+        service = EquipmentServices()
+        try:
+            equipment = service.update_equipment(equipment_id, data)
+            return Response(
+                {'message': 'Equipment updated successfully.', 'equipment': equipment},
+                status=HTTP_200_OK,
+            )
+        except ValueError as e:
+            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        

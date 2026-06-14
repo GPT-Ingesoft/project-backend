@@ -27,6 +27,8 @@ from information_app.controllers.equipment_controller import (
     EquipmentCriticalityDebugView,
     RegisterEquipmentView,
     RegisterEquipmentDebugView,
+    UpdateEquipmentView,
+    UpdateEquipmentDebugView
 )
 
 app_name = 'information_app'
@@ -48,6 +50,7 @@ urlpatterns = [
     # ── Equipment management ───────────────────────────────────────────────────
     path('equipment/',                                      EquipmentView.as_view(),              name='list-equipment'),
     path('equipment/register/',                             RegisterEquipmentView.as_view(),       name='register-equipment'),
+    path('equipment/<int:equipment_id>/update/', UpdateEquipmentView.as_view(), name='update-equipment'),
     path('equipment/<int:equipment_id>/availability/',      EquipmentAvailabilityView.as_view(),   name='equipment-availability'),
     path('equipment/<int:equipment_id>/history/',           EquipmentHistoryView.as_view(),        name='equipment-history'),
     path('equipment/<int:equipment_id>/decommission/',      EquipmentDecommissionView.as_view(),   name='equipment-decommission'),
@@ -61,6 +64,7 @@ urlpatterns = [
 
     path('equipment/debug/',                                        EquipmentDebugView.as_view(),               name='list-equipment-debug'),
     path('equipment/register_debug/',                               RegisterEquipmentDebugView.as_view(),       name='register-equipment-debug'),
+    path('equipment/<int:equipment_id>/update_debug/', UpdateEquipmentDebugView.as_view(), name='update-equipment-debug'),
     path('equipment/<int:equipment_id>/availability_debug/',        EquipmentAvailabilityDebugView.as_view(),   name='equipment-availability-debug'),
     path('equipment/<int:equipment_id>/decommission_debug/',        EquipmentDecommissionDebugView.as_view(),   name='equipment-decommission-debug'),
     path('equipment/<int:equipment_id>/criticality_debug/',         EquipmentCriticalityDebugView.as_view(),    name='equipment-criticality-debug'),
