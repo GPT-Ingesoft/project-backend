@@ -28,7 +28,7 @@ class RequestServices:
                 f"Solo se pueden aprobar solicitudes en estado 'pendiente'. "
                 f"Estado actual: '{solicitud.estado}'."
             )
-        solicitud = self.repo.aprobar(solicitud, usuario)
+        solicitud = self.repo.approve(solicitud, usuario)
         return self._format_request(solicitud)
 
     # ── RF_34: Consultar horario del laboratorio ───────────────────────────────
