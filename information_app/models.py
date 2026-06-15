@@ -125,6 +125,11 @@ class Solicitud(models.Model):
     prioridad = models.CharField(max_length=50, choices=PRIORIDAD_CHOICES, default='media')
     estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='pendiente')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_cierre = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Fecha y hora en que la solicitud fue completada o cancelada.',
+    )
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='solicitudes')
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='solicitudes')

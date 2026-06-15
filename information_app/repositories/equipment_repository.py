@@ -16,6 +16,11 @@ class EquipmentRepository:
 
     def serial_number_exists(self, serial_number: str) -> bool:
         return Equipo.objects.filter(numero_serie=serial_number).exists()
+    
+    def inventory_code_exists_for_other(self, inventory_code: str, equipment_id: int) -> bool:
+        return Equipo.objects.filter(
+            codigo_inventario=inventory_code
+        ).exclude(id=equipment_id).exists()
 
     # ── Write operations ───────────────────────────────────────────────────────
     def create(self, name: str, inventory_code: str, model: str, brand: str,
@@ -31,6 +36,12 @@ class EquipmentRepository:
             estado=status,
             criticidad=criticality,
         )
+    
+    def update(self, equipment: Equipo, fields: dict) -> Equipo:
+        for attr, value in fields.items():
+            setattr(equipment, attr, value)
+        equipment.save(update_fields=list(fields.keys()))
+        return equipment
 
     def decommission(self, equipment: Equipo, reason: str) -> Equipo:
         equipment.estado = 'dado_de_baja'

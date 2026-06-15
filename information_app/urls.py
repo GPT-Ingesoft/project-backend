@@ -17,11 +17,42 @@ from information_app.controllers.user_controller import (
 )
 from information_app.controllers.equipment_controller import (
     EquipmentView,
-    EquipmentDetailView,
+    EquipmentAvailabilityView,
+    EquipmentDecommissionView,
+    EquipmentCriticalityView,
     EquipmentHistoryView,
     EquipmentDebugView,
+    EquipmentAvailabilityDebugView,
+    EquipmentDecommissionDebugView,
+    EquipmentCriticalityDebugView,
     RegisterEquipmentView,
     RegisterEquipmentDebugView,
+    UpdateEquipmentView,       
+    UpdateEquipmentDebugView,
+)
+# ── NUEVOS IMPORTS (RF_34, RF_35, RF_37, RF_38) ───────────────────────────────
+from information_app.controllers.request_controller import (
+    RequestApproveView,
+    LabScheduleView,
+    RequestStatusView,
+    RequestAttachmentView,
+    RequestApproveDebugView,
+    RequestStatusDebugView,
+    RequestAttachmentDebugView,
+    LabScheduleDebugView,
+)
+# ── NUEVOS IMPORTS (RF_47, RF_50, RF_51, RF_52, RF_53) ───────────────────────
+from information_app.controllers.admin_controller import (
+    NotificationHistoryView,
+    FailureReportView,
+    RepairTimeReportView,
+    OutOfServiceReportView,
+    ActiveEquipmentDashboardView,
+    NotificationHistoryDebugView,
+    FailureReportDebugView,
+    RepairTimeReportDebugView,
+    OutOfServiceReportDebugView,
+    ActiveEquipmentDashboardDebugView,
 )
 
 app_name = 'information_app'
@@ -41,12 +72,26 @@ urlpatterns = [
     path('auth/me/',                      MeView.as_view(),                name='auth-me'),
 
     # ── Equipment management ───────────────────────────────────────────────────
-    path('equipment/',                                      EquipmentView.as_view(),        name='list-equipment'),
-    path('equipment/register/',                             RegisterEquipmentView.as_view(),name='register-equipment'),
-    path('equipment/<int:equipment_id>/availability/',      EquipmentDetailView.as_view(),  name='equipment-availability'),
-    path('equipment/<int:equipment_id>/history/',           EquipmentHistoryView.as_view(), name='equipment-history'),
-    path('equipment/<int:equipment_id>/decommission/',      EquipmentDetailView.as_view(),  name='equipment-decommission'),
-    path('equipment/<int:equipment_id>/criticality/',       EquipmentDetailView.as_view(),  name='equipment-criticality'),
+    path('equipment/',                                      EquipmentView.as_view(),               name='list-equipment'),
+    path('equipment/register/',                             RegisterEquipmentView.as_view(),       name='register-equipment'),
+    path('equipment/<int:equipment_id>/update/',            UpdateEquipmentView.as_view(),         name='update-equipment'),
+    path('equipment/<int:equipment_id>/availability/',      EquipmentAvailabilityView.as_view(),   name='equipment-availability'),
+    path('equipment/<int:equipment_id>/history/',           EquipmentHistoryView.as_view(),        name='equipment-history'),
+    path('equipment/<int:equipment_id>/decommission/',      EquipmentDecommissionView.as_view(),   name='equipment-decommission'),
+    path('equipment/<int:equipment_id>/criticality/',       EquipmentCriticalityView.as_view(),    name='equipment-criticality'),
+
+# ── Request management ───────────────────────────────────────────────────
+    path('solicitudes/<int:solicitud_id>/aprobar/',   RequestApproveView.as_view(),    name='aprobar-solicitud'),
+    path('solicitudes/horario/',                      LabScheduleView.as_view(),  name='horario-laboratorio'),
+    path('solicitudes/<int:solicitud_id>/estado/',    RequestStatusView.as_view(),     name='cambiar-estado-solicitud'),
+    path('solicitudes/<int:solicitud_id>/adjuntos/',  RequestAttachmentView.as_view(),    name='subir-adjunto-solicitud'),
+
+# ── Admin management ───────────────────────────────────────────────────
+    path('admin/notificaciones/',                    NotificationHistoryView.as_view(),    name='admin-notificaciones'),
+    path('admin/reportes/fallas/',                   FailureReportView.as_view(),            name='admin-reporte-fallas'),
+    path('admin/reportes/tiempos-reparacion/',       RepairTimeReportView.as_view(), name='admin-reporte-tiempos'),
+    path('admin/reportes/fuera-de-servicio/',        OutOfServiceReportView.as_view(),   name='admin-reporte-fuera-servicio'),
+    path('panel/equipos-activos/',                   ActiveEquipmentDashboardView.as_view(),      name='panel-equipos-activos'),
 
     #################### DEBUG #######################
     path('users/register_debug/',                       RegisterUserDebugView.as_view(),  name='register-user-debug'),
@@ -54,7 +99,21 @@ urlpatterns = [
     path('users/<int:user_id>/role_debug/',             AssignRoleDebugView.as_view(),    name='assign-role-debug'),
     path('users/<int:user_id>/status_debug/',           ChangeStatusDebugView.as_view(),  name='change-status-debug'),
 
-    path('equipment/debug/',                                        EquipmentDebugView.as_view(),  name='list-equipment-debug'),
-    path('equipment/register_debug/',                               RegisterEquipmentDebugView.as_view(),name='register-equipment-debug'),
-    path('equipment/<int:equipment_id>/debug/<str:action>/',        EquipmentDebugView.as_view(),  name='equipment-action-debug'),
+    path('equipment/debug/',                                        EquipmentDebugView.as_view(),               name='list-equipment-debug'),
+    path('equipment/register_debug/',                               RegisterEquipmentDebugView.as_view(),       name='register-equipment-debug'),
+    path('equipment/<int:equipment_id>/update_debug/',              UpdateEquipmentDebugView.as_view(),         name='update-equipment-debug'),
+    path('equipment/<int:equipment_id>/availability_debug/',        EquipmentAvailabilityDebugView.as_view(),   name='equipment-availability-debug'),
+    path('equipment/<int:equipment_id>/decommission_debug/',        EquipmentDecommissionDebugView.as_view(),   name='equipment-decommission-debug'),
+    path('equipment/<int:equipment_id>/criticality_debug/',         EquipmentCriticalityDebugView.as_view(),    name='equipment-criticality-debug'),
+    
+    path('solicitudes/<int:solicitud_id>/aprobar_debug/',       RequestApproveDebugView.as_view(),   name='aprobar-solicitud-debug'),
+    path('solicitudes/<int:solicitud_id>/estado_debug/',        RequestStatusDebugView.as_view(),    name='cambiar-estado-debug'),
+    path('solicitudes/<int:solicitud_id>/adjuntos_debug/',      RequestAttachmentDebugView.as_view(),   name='subir-adjunto-debug'),
+    path('solicitudes/horario_debug/',                          LabScheduleDebugView.as_view(), name='horario-laboratorio-debug'),
+ 
+    path('admin/notificaciones_debug/',                         NotificationHistoryDebugView.as_view(),  name='admin-notificaciones-debug'),
+    path('admin/reportes/fallas_debug/',                        FailureReportDebugView.as_view(),          name='admin-reporte-fallas-debug'),
+    path('admin/reportes/tiempos-reparacion_debug/',            RepairTimeReportDebugView.as_view(),         name='admin-reporte-tiempos-debug'),
+    path('admin/reportes/fuera-de-servicio_debug/',             OutOfServiceReportDebugView.as_view(),   name='admin-reporte-fuera-servicio-debug'),
+    path('panel/equipos-activos_debug/',                        ActiveEquipmentDashboardDebugView.as_view(),    name='panel-equipos-activos-debug'),
 ]
