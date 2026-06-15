@@ -527,3 +527,151 @@ Content-Type: application/json
 #### Body y Respuestas
  
 Idénticos al endpoint `POST /api/equipment/register/`, sin los errores `403`.
+
+---
+
+### 9. Actualizar Equipo
+
+> Requiere autenticación. Solo usuarios con rol `laboratorista` pueden acceder a este endpoint.
+
+#### Endpoint
+
+```
+PATCH /api/equipment/{equipment_id}/update/
+```
+
+#### Parámetros de ruta
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `equipment_id` | integer | ID del equipo a actualizar |
+
+#### Headers
+
+```
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+#### Body
+
+Es una actualización parcial: solo se modifican los campos presentes en el body. Cualquier campo omitido conserva su valor actual.
+
+```json
+{
+  "name":           "Microscopio Óptico Avanzado",
+  "inventory_code": "EQ-001-A",
+  "model":          "Axiostar Plus v2",
+  "brand":          "Zeiss",
+  "location":       "Laboratorio 4 - Piso 3",
+  "status":         "en_mantenimiento",
+  "criticality":    "alta"
+}
+```
+
+#### Campos
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `name` | string | No | Nuevo nombre del equipo. No puede ser vacío si se envía. |
+| `inventory_code` | string | No | Nuevo código de inventario. Debe ser único en el sistema (excluyendo el equipo actual). |
+| `model` | string | No | Nuevo modelo del equipo. No puede ser vacío si se envía. |
+| `brand` | string | No | Nueva marca del equipo. No puede ser vacío si se envía. |
+| `location` | string | No | Nueva ubicación física. No puede ser vacío si se envía. |
+| `status` | string | No | Nuevo estado. Valores permitidos: `operativo`, `en_mantenimiento`, `fuera_de_servicio`. |
+| `criticality` | string | No | Nueva criticidad. Valores permitidos: `alta`, `media`, `baja`. |
+| `serial_number` | — | ❌ Prohibido | El número de serie **no puede modificarse**. El sistema rechazará la solicitud si este campo está presente. |
+
+---
+
+#### Respuestas
+
+**`200 OK` — Actualización exitosa**
+
+```json
+{
+  "message": "Equipment updated successfully.",
+  "equipment": {
+    "id":                  1,
+    "name":                "Microscopio Óptico Avanzado",
+    "inventory_code":      "EQ-001-A",
+    "model":               "Axiostar Plus v2",
+    "brand":               "Zeiss",
+    "serial_number":       "SN-2024-001",
+    "location":            "Laboratorio 4 - Piso 3",
+    "status":              "en_mantenimiento",
+    "criticality":         "alta",
+    "decommission_reason": null,
+    "decommission_date":   null,
+    "created_at":          "2026-05-25T10:30:00"
+  }
+}
+```
+
+**`400 Bad Request` — Error de validación**
+
+```json
+{
+  "error": "<mensaje de error descriptivo>"
+}
+```
+
+**`403 Forbidden` — Token inválido o rol insuficiente**
+
+```json
+{
+  "error": "Only lab technicians can update equipment."
+}
+```
+
+```json
+{
+  "error": "<token error message>"
+}
+```
+
+**`500 Internal Server Error`**
+
+```json
+{
+  "error": "Internal error. Please contact support."
+}
+```
+
+---
+
+#### Casos de error frecuentes
+
+| Situación | Mensaje de error |
+|---|---|
+| `serial_number` presente en el body | `"Field 'serial_number' cannot be modified."` |
+| Equipo no encontrado | `"Equipment not found."` |
+| Equipo dado de baja | `"Equipment '<name>' is decommissioned and cannot be modified."` |
+| Campo enviado con valor vacío | `"Field '<field>' cannot be empty."` |
+| Estado no reconocido | `"Status '<status>' is not valid. Allowed values: en_mantenimiento, fuera_de_servicio, operativo."` |
+| Criticidad no reconocida | `"Criticality '<criticality>' is not valid. Allowed values: alta, baja, media."` |
+| Código de inventario ya registrado en otro equipo | `"Inventory code '<code>' is already registered. Please use a different code."` |
+| Body sin ningún campo actualizable | `"No valid fields provided for update."` |
+| Body inválido o sin `Content-Type` | `"The request body must be a valid JSON object. Make sure to include the header Content-Type: application/json"` |
+
+---
+
+### 10. Actualizar Equipo (Debug)
+
+> ⚠️ **Solo para desarrollo.** Este endpoint no requiere autenticación.
+
+#### Endpoint
+
+```
+PATCH /api/equipment/{equipment_id}/update_debug/
+```
+
+#### Headers
+
+```
+Content-Type: application/json
+```
+
+#### Body y Respuestas
+
+Idénticos al endpoint `PATCH /api/equipment/{equipment_id}/update/`, sin los errores `403`.
