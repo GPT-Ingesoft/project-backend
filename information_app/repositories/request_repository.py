@@ -1,5 +1,13 @@
-from information_app.models import Asignacion, Solicitud, Tecnico
-from ..models import Solicitud, HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion
+from information_app.models import (
+    Solicitud,
+    Asignacion,
+    Tecnico,
+    HistorialEstadoSolicitud,
+    Anexo,
+    Adjunto,
+    HorarioAtencion
+)
+
 from django.utils import timezone
 
 ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
@@ -32,9 +40,6 @@ class RequestRepository:
 
         return assignments
     # ── Consultas ──────────────────────────────────────────────────────────────
-
-    def get_by_id(self, solicitud_id: int):
-        return Solicitud.objects.filter(id=solicitud_id).first()
 
     def get_lab_schedules(self, laboratorio: str):
         # RF_34
