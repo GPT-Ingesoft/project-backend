@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ('information_app', '0002_remove_usuario_oauth_id_and_more'),
+        ('information_app', '0003_intervencion'),
     ]
 
     operations = [
