@@ -80,31 +80,17 @@ urlpatterns = [
     path('equipment/<int:equipment_id>/decommission/',      EquipmentDecommissionView.as_view(),   name='equipment-decommission'),
     path('equipment/<int:equipment_id>/criticality/',       EquipmentCriticalityView.as_view(),    name='equipment-criticality'),
 
-    # ── Solicitud management (RF_34, RF_35, RF_37, RF_38) ─────────────────────
-    # RF_35: Aprobar solicitud → estado cambia a 'En proceso' automáticamente
+# ── Request management ───────────────────────────────────────────────────
     path('solicitudes/<int:solicitud_id>/aprobar/',   RequestApproveView.as_view(),    name='aprobar-solicitud'),
-    # RF_34: Consultar horario de laboratorio al revisar una solicitud
     path('solicitudes/horario/',                      LabScheduleView.as_view(),  name='horario-laboratorio'),
-    # RF_37: Cambio manual de estado con motivo obligatorio
     path('solicitudes/<int:solicitud_id>/estado/',    RequestStatusView.as_view(),     name='cambiar-estado-solicitud'),
-    # RF_38: Subir archivos adjuntos (multipart/form-data)
     path('solicitudes/<int:solicitud_id>/adjuntos/',  RequestAttachmentView.as_view(),    name='subir-adjunto-solicitud'),
- 
-    # ── Admin: Notificaciones (RF_47) ──────────────────────────────────────────
-    # RF_47: Historial de notificaciones ordenado del más reciente al más antiguo
+
+# ── Admin management ───────────────────────────────────────────────────
     path('admin/notificaciones/',                    NotificationHistoryView.as_view(),    name='admin-notificaciones'),
- 
-    # ── Admin: Reportes (RF_50, RF_51, RF_52) ─────────────────────────────────
-    # RF_50: Equipos ordenados de mayor a menor número de fallas
     path('admin/reportes/fallas/',                   FailureReportView.as_view(),            name='admin-reporte-fallas'),
-    # RF_51: Tiempo promedio de reparación por equipo (usa solicitudes completadas)
     path('admin/reportes/tiempos-reparacion/',       RepairTimeReportView.as_view(), name='admin-reporte-tiempos'),
-    # RF_52: Equipos fuera de servicio con inactividad > umbral_dias (default 30)
-    #        GET /api/admin/reportes/fuera-de-servicio/?umbral_dias=15
     path('admin/reportes/fuera-de-servicio/',        OutOfServiceReportView.as_view(),   name='admin-reporte-fuera-servicio'),
- 
-    # ── Panel principal (RF_53) ────────────────────────────────────────────────
-    # RF_53: Listado de equipos activos (nombre, ubicación, estado) — todos los roles
     path('panel/equipos-activos/',                   ActiveEquipmentDashboardView.as_view(),      name='panel-equipos-activos'),
 
     #################### DEBUG #######################
