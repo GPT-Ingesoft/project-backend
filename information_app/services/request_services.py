@@ -2,8 +2,6 @@ from django.db import transaction
 
 from information_app.repositories.request_repository import RequestRepository
 
-from ..repositories.request_repository import RequestRepository
-
 ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 TIPOS_ADJUNTO_VALIDOS = {'imagen', 'documento', 'video', 'otro'}
 REASSIGNABLE_REQUEST_STATUSES = {'pendiente', 'en_proceso'}
@@ -86,13 +84,10 @@ class RequestServices:
         self.request_repository.replace_assigned_technicians(request, technicians)
 
         return self.format_request_assignment_data(request, technicians)
-        self.repo = RequestRepository()
-
-    # ── RF_35: Aprobar solicitud → estado "En proceso" automático ─────────────
 
     @transaction.atomic
     def approve_request(self, solicitud_id: int, usuario) -> dict:
-        solicitud = self.repo.get_by_id(solicitud_id)
+        solicitud = RequestRepository().get_by_id(solicitud_id)
         if not solicitud:
             raise ValueError("Solicitud no encontrada.")
         if solicitud.estado != 'pendiente':
@@ -100,45 +95,60 @@ class RequestServices:
                 f"Solo se pueden aprobar solicitudes en estado 'pendiente'. "
                 f"Estado actual: '{solicitud.estado}'."
             )
-        solicitud = self.repo.approve(solicitud, usuario)
+        solicitud = RequestRepository().approve(solicitud, usuario)
         return self._format_request(solicitud)
 
-    # ── RF_34: Consultar horario del laboratorio ───────────────────────────────
 
     def get_lab_schedule(self, laboratorio: str) -> list:
         if not laboratorio or not laboratorio.strip():
             raise ValueError("Debe indicar el nombre del laboratorio.")
-        horarios = self.repo.get_lab_schedules(laboratorio.strip())
+        horarios = RequestRepository().get_lab_schedules(laboratorio.strip())
         if not horarios.exists():
             raise ValueError(f"No se encontraron horarios disponibles para '{laboratorio}'.")
         return [self._format_schedule(h) for h in horarios]
 
     def get_available_laboratories(self) -> list:
-        return list(self.repo.get_laboratories())
+        return list(RequestRepository().get_laboratories())
 
-    # ── RF_37: Cambio manual de estado con motivo obligatorio ─────────────────
-    
-    @transaction.atomic    
-    def change_status_manually(self, solicitud_id: int, nuevo_estado: str, motivo: str, usuario) -> dict:
+
+    @transaction.atomic
+    def change_status_manually(
+        self,
+        solicitud_id: int,
+        nuevo_estado: str,
+        motivo: str,
+        usuario
+    ) -> dict:
+
         if not motivo or not motivo.strip():
-            raise ValueError("Debe especificar un motivo para el cambio de estado. El campo 'motivo' es obligatorio.")
+            raise ValueError(
+                "Debe especificar un motivo para el cambio de estado."
+                " El campo 'motivo' es obligatorio."
+            )
+
         if nuevo_estado not in ESTADOS_VALIDOS:
             raise ValueError(
                 f"Estado '{nuevo_estado}' no es válido. "
                 f"Estados permitidos: {', '.join(sorted(ESTADOS_VALIDOS))}."
             )
-        solicitud = self.repo.get_by_id(solicitud_id)
+        solicitud = RequestRepository().get_by_id(solicitud_id)
         if not solicitud:
             raise ValueError("Solicitud no encontrada.")
         transiciones = TRANSICIONES_PERMITIDAS.get(solicitud.estado, set())
         if nuevo_estado not in transiciones:
             if not transiciones:
-                raise ValueError(f"La solicitud en estado '{solicitud.estado}' no puede ser modificada.")
+                raise ValueError(
+                    f"La solicitud en estado '{solicitud.estado}' no puede ser modificada."
+                )
+
             raise ValueError(
                 f"No es posible cambiar de '{solicitud.estado}' a '{nuevo_estado}'. "
                 f"Transiciones permitidas: {', '.join(sorted(transiciones))}."
             )
-        solicitud = self.repo.change_status(solicitud, nuevo_estado, motivo.strip(), usuario)
+        solicitud = RequestRepository().change_status(
+            solicitud, nuevo_estado, motivo.strip(), usuario
+        )
+
         return self._format_request(solicitud)
 
     # ── RF_38: Subir archivos adjuntos ────────────────────────────────────────
@@ -155,14 +165,20 @@ class RequestServices:
         tipo = tipo.strip().lower() if tipo else 'otro'
         if tipo not in TIPOS_ADJUNTO_VALIDOS:
             raise ValueError(
-                f"Tipo '{tipo}' no es válido. Tipos permitidos: {', '.join(sorted(TIPOS_ADJUNTO_VALIDOS))}."
+                f"Tipo '{tipo}' no es válido. Tipos permitidos:"
+                f"{', '.join(sorted(TIPOS_ADJUNTO_VALIDOS))}."
             )
-        solicitud = self.repo.get_by_id(solicitud_id)
+
+        solicitud = RequestRepository().get_by_id(solicitud_id)
         if not solicitud:
             raise ValueError("Solicitud no encontrada.")
         if solicitud.estado in ('completada', 'cancelada'):
-            raise ValueError(f"No se pueden adjuntar archivos a una solicitud en estado '{solicitud.estado}'.")
-        adjunto = self.repo.create_attachment(
+            raise ValueError(
+                f"No se pueden adjuntar archivos a una solicitud en estado "
+                f"'{solicitud.estado}'."
+            )
+
+        adjunto = RequestRepository().create_attachment(
             solicitud=solicitud, archivo=archivo, tipo=tipo,
             nombre=nombre.strip(), tamanio=tamanio,
             descripcion=descripcion.strip(), usuario=usuario,

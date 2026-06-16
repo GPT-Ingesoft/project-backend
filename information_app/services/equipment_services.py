@@ -3,7 +3,10 @@ from django.db import transaction
 from information_app.repositories.equipment_repository import EquipmentRepository
 
 VALID_CRITICALITIES = {'alta', 'media', 'baja'}
-REQUIRED_EQUIPMENT_FIELDS = {'name', 'inventory_code', 'model', 'brand', 'serial_number', 'location'}
+REQUIRED_EQUIPMENT_FIELDS = {
+    'name', 'inventory_code', 'model',
+    'brand', 'serial_number', 'location'
+}
 VALID_STATUSES           = {'operativo', 'en_mantenimiento', 'fuera_de_servicio'}
 
 class EquipmentServices:
@@ -95,7 +98,9 @@ class EquipmentServices:
             inventory_code = str(data['inventory_code']).strip()
             if not inventory_code:
                 raise ValueError("Field 'inventory_code' cannot be empty.")
-            if self.equipment_repository.inventory_code_exists_for_other(inventory_code, equipment_id):
+            if self.equipment_repository.inventory_code_exists_for_other(
+                inventory_code, equipment_id
+            ):
                 raise ValueError(
                     f"Inventory code '{inventory_code}' is already registered. "
                     "Please use a different code."
@@ -159,7 +164,11 @@ class EquipmentServices:
             'status':           equipment.estado,
             'criticality':      equipment.criticidad,
             'decommission_reason': equipment.motivo_baja,
-            'decommission_date':   equipment.fecha_baja.isoformat() if equipment.fecha_baja else None,
+
+            'decommission_date':   (
+                equipment.fecha_baja.isoformat() if equipment.fecha_baja else None,
+            ),
+
             'created_at':       equipment.fecha_creacion.isoformat(),
         }
 
@@ -267,14 +276,19 @@ class EquipmentServices:
 
     def update_criticality(self, equipment_id: int, criticality: str) -> dict:
         if criticality not in VALID_CRITICALITIES:
-            raise ValueError(f"Criticality '{criticality}' is not valid. Allowed values: {', '.join(VALID_CRITICALITIES)}.")
+            raise ValueError(
+                f"Criticality '{criticality}' is not valid."
+                f"Allowed values: {', '.join(VALID_CRITICALITIES)}."
+            )
 
         equipment = self.equipment_repository.get_by_id(equipment_id)
         if not equipment:
             raise ValueError("Equipment not found.")
 
         if equipment.estado == 'dado_de_baja':
-            raise ValueError(f"Equipment '{equipment.nombre}' is decommissioned and cannot be modified.")
+            raise ValueError(
+                f"Equipment '{equipment.nombre}' is decommissioned and cannot be modified."
+            )
 
         equipment = self.equipment_repository.update_criticality(equipment, criticality)
         return self.format_equipment_data(equipment)

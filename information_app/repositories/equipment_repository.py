@@ -72,7 +72,12 @@ class EquipmentRepository:
             .first()
         )
 
-    def create_intervention(self, solicitud, tecnico, descripcion: str, observaciones: str = None) -> Intervencion:
+    def create_intervention(
+        self, solicitud, tecnico,
+        descripcion: str,
+        observaciones: str = None
+    ) -> Intervencion:
+
         return Intervencion.objects.create(
             solicitud=solicitud,
             tecnico=tecnico,
