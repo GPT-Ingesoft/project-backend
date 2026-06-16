@@ -1,11 +1,14 @@
 from django.urls import path
 
-from information_app.controllers.user_controller import (
+from information_app.controllers.auth_controller import (
     OAuthLoginView,
     OAuthCallbackView,
-    RegisterUserDebugView,
     TokenRefreshView,
     MeView,
+)
+
+from information_app.controllers.user_controller import (
+    RegisterUserDebugView,
     UpdateProfileView,
     RegisterUserView,
     AssignRoleView,

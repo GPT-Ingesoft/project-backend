@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.exceptions import ParseError
 from django.db import DatabaseError
 
+from information_app.services.auth_services import AuthServices
 from information_app.services.user_services import UserServices
 
 HANDLED_EXCEPTIONS = (ValueError, DatabaseError, PermissionError)
@@ -15,7 +16,7 @@ class ControllerMixin:
 
     def get_user(self, request):
         try:
-            return UserServices().extract_user_from_token(request)
+            return AuthServices().extract_user_from_token(request)
         except ValueError as e:
             raise AccessDeniedError(str(e)) from e
 

@@ -60,14 +60,18 @@ class RequestStatusView(BaseAPIView):
     @handle_exceptions
     def patch(self, request, solicitud_id):
         usuario      = self.get_user(request)
-        nuevo_estado = require_field(request.data, 'estado').strip()
-        motivo       = require_field(request.data, 'motivo').strip()
+
+        data = {
+            'estado': require_field(request.data, 'estado').strip(),
+            'motivo': require_field(request.data, 'motivo').strip(),
+        }
 
         solicitud = RequestServices().change_status_manually(
-            solicitud_id, nuevo_estado, motivo, usuario
+            solicitud_id, data, usuario
         )
+
         return Response(
-            {'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud},
+            {'message': f"Estado actualizado a '{data['estado']}'.", 'solicitud': solicitud},
             status=status.HTTP_200_OK,
         )
 
@@ -81,19 +85,20 @@ class RequestAttachmentView(BaseAPIView):
         if not archivo:
             raise ValidationError("El campo 'archivo' es obligatorio.")
 
-        tipo        = request.data.get('tipo', 'otro')
-        nombre      = request.data.get('nombre_archivo', '') or archivo.name
-        descripcion = request.data.get('descripcion', '')
+        data = {
+            'archivo':     archivo,
+            'tipo':        request.data.get('tipo', 'otro'),
+            'nombre':      request.data.get('nombre_archivo', '') or archivo.name,
+            'tamanio':     archivo.size,
+            'descripcion': request.data.get('descripcion', ''),
+        }
 
         adjunto = RequestServices().upload_attachment(
             solicitud_id=solicitud_id,
-            archivo=archivo,
-            tipo=tipo,
-            nombre=nombre,
-            tamanio=archivo.size,
-            descripcion=descripcion,
+            data=data,
             usuario=usuario,
         )
+
         return Response(
             {'message': 'Archivo adjunto cargado correctamente.', 'adjunto': adjunto},
             status=status.HTTP_201_CREATED,
@@ -115,14 +120,17 @@ class RequestStatusDebugView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, solicitud_id):
-        nuevo_estado = require_field(request.data, 'estado').strip()
-        motivo       = require_field(request.data, 'motivo').strip()
+        data = {
+            'estado': require_field(request.data, 'estado').strip(),
+            'motivo': require_field(request.data, 'motivo').strip(),
+        }
 
         solicitud = RequestServices().change_status_manually(
-            solicitud_id, nuevo_estado, motivo, usuario=None
+            solicitud_id, data, usuario=None
         )
+
         return Response(
-            {'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud},
+            {'message': f"Estado actualizado a '{data['estado']}'.", 'solicitud': solicitud},
             status=status.HTTP_200_OK,
         )
 
@@ -134,19 +142,20 @@ class RequestAttachmentDebugView(BaseAPIView):
         if not archivo:
             raise ValidationError("El campo 'archivo' es obligatorio.")
 
-        tipo        = request.data.get('tipo', 'otro')
-        nombre      = request.data.get('nombre_archivo', '') or archivo.name
-        descripcion = request.data.get('descripcion', '')
+        data = {
+            'archivo':     archivo,
+            'tipo':        request.data.get('tipo', 'otro'),
+            'nombre':      request.data.get('nombre_archivo', '') or archivo.name,
+            'tamanio':     archivo.size,
+            'descripcion': request.data.get('descripcion', ''),
+        }
 
         adjunto = RequestServices().upload_attachment(
             solicitud_id=solicitud_id,
-            archivo=archivo,
-            tipo=tipo,
-            nombre=nombre,
-            tamanio=archivo.size,
-            descripcion=descripcion,
+            data=data,
             usuario=None,
         )
+
         return Response(
             {'message': 'Archivo adjunto cargado correctamente.', 'adjunto': adjunto},
             status=status.HTTP_201_CREATED,

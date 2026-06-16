@@ -1,6 +1,10 @@
 from django.db import transaction
 
 from information_app.repositories.request_repository import RequestRepository
+from information_app.services.services_utils import (
+    format_technician_data,
+    validate_enum
+)
 
 ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 TIPOS_ADJUNTO_VALIDOS = {'imagen', 'documento', 'video', 'otro'}
@@ -13,19 +17,22 @@ TRANSICIONES_PERMITIDAS = {
     'cancelada':   set(),
 }
 
-
 class RequestServices:
     def __init__(self):
         self.request_repository = RequestRepository()
+
+    # ── Validations ──────────────────────────────────────────────────────────
 
     @staticmethod
     def validate_technician_ids(data: dict) -> list[int]:
         technician_ids = data.get('technician_ids')
 
         if not isinstance(technician_ids, list) or not technician_ids:
-            raise ValueError("Field 'technician_ids' is required and must be a non-empty list.")
+            raise ValueError(
+                "Field 'technician_ids' is required and must be a non-empty list."
+            )
 
-        if not all(isinstance(technician_id, int) for technician_id in technician_ids):
+        if not all(isinstance(tid, int) for tid in technician_ids):
             raise ValueError("Field 'technician_ids' must contain only integer values.")
 
         unique_ids = list(dict.fromkeys(technician_ids))
@@ -33,16 +40,6 @@ class RequestServices:
             raise ValueError("Field 'technician_ids' cannot contain duplicated values.")
 
         return unique_ids
-
-    @staticmethod
-    def format_technician_data(technician) -> dict:
-        return {
-            'id': technician.usuario.id,
-            'name': technician.usuario.nombre,
-            'email': technician.usuario.correo,
-            'specialty': technician.especialidad,
-            'contact': technician.contacto,
-        }
 
     @staticmethod
     def format_request_assignment_data(request, technicians: list) -> dict:
@@ -53,10 +50,11 @@ class RequestServices:
                 'description': request.descripcion,
             },
             'assigned_technicians': [
-                RequestServices.format_technician_data(technician)
-                for technician in technicians
+                format_technician_data(technician) for technician in technicians
             ],
         }
+
+    # ── Core operations ──────────────────────────────────────────────────────
 
     @transaction.atomic
     def reassign_technicians(self, request_id: int, data: dict) -> dict:
@@ -82,7 +80,6 @@ class RequestServices:
             )
 
         self.request_repository.replace_assigned_technicians(request, technicians)
-
         return self.format_request_assignment_data(request, technicians)
 
     @transaction.atomic
@@ -98,7 +95,6 @@ class RequestServices:
         solicitud = RequestRepository().approve(solicitud, usuario)
         return self._format_request(solicitud)
 
-
     def get_lab_schedule(self, laboratorio: str) -> list:
         if not laboratorio or not laboratorio.strip():
             raise ValueError("Debe indicar el nombre del laboratorio.")
@@ -110,30 +106,26 @@ class RequestServices:
     def get_available_laboratories(self) -> list:
         return list(RequestRepository().get_laboratories())
 
-
     @transaction.atomic
     def change_status_manually(
-        self,
-        solicitud_id: int,
-        nuevo_estado: str,
-        motivo: str,
-        usuario
+        self, solicitud_id: int, data: dict, usuario
     ) -> dict:
 
-        if not motivo or not motivo.strip():
+        nuevo_estado = data.get('estado', '').strip()
+        motivo = data.get('motivo', '').strip()
+
+        if not motivo:
             raise ValueError(
                 "Debe especificar un motivo para el cambio de estado."
                 " El campo 'motivo' es obligatorio."
             )
 
-        if nuevo_estado not in ESTADOS_VALIDOS:
-            raise ValueError(
-                f"Estado '{nuevo_estado}' no es válido. "
-                f"Estados permitidos: {', '.join(sorted(ESTADOS_VALIDOS))}."
-            )
-        solicitud = RequestRepository().get_by_id(solicitud_id)
+        nuevo_estado = validate_enum(nuevo_estado, ESTADOS_VALIDOS, 'Estado')
+
+        solicitud = self.request_repository.get_by_id(solicitud_id)
         if not solicitud:
             raise ValueError("Solicitud no encontrada.")
+
         transiciones = TRANSICIONES_PERMITIDAS.get(solicitud.estado, set())
         if nuevo_estado not in transiciones:
             if not transiciones:
@@ -145,31 +137,37 @@ class RequestServices:
                 f"No es posible cambiar de '{solicitud.estado}' a '{nuevo_estado}'. "
                 f"Transiciones permitidas: {', '.join(sorted(transiciones))}."
             )
-        solicitud = RequestRepository().change_status(
-            solicitud, nuevo_estado, motivo.strip(), usuario
+
+        solicitud = self.request_repository.change_status(
+            solicitud, nuevo_estado, motivo, usuario
         )
 
         return self._format_request(solicitud)
 
-    # ── RF_38: Subir archivos adjuntos ────────────────────────────────────────
-
     @transaction.atomic
-    def upload_attachment(self, solicitud_id: int, archivo, tipo: str, nombre: str,
-                      tamanio: int, descripcion: str, usuario) -> dict:
+    def upload_attachment(self, solicitud_id: int, data: dict, usuario) -> dict:
+
+        archivo = data.get('archivo')
         if not archivo:
             raise ValueError("Debe adjuntar un archivo.")
-        if not nombre or not nombre.strip():
-            raise ValueError("El campo 'nombre_archivo' es obligatorio.")
-        if not descripcion or not descripcion.strip():
-            raise ValueError("El campo 'descripcion' es obligatorio.")
-        tipo = tipo.strip().lower() if tipo else 'otro'
-        if tipo not in TIPOS_ADJUNTO_VALIDOS:
-            raise ValueError(
-                f"Tipo '{tipo}' no es válido. Tipos permitidos:"
-                f"{', '.join(sorted(TIPOS_ADJUNTO_VALIDOS))}."
-            )
 
-        solicitud = RequestRepository().get_by_id(solicitud_id)
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            raise ValueError("El campo 'nombre_archivo' es obligatorio.")
+
+        descripcion = data.get('descripcion', '').strip()
+        if not descripcion:
+            raise ValueError("El campo 'descripcion' es obligatorio.")
+
+        tipo = validate_enum(
+            data.get('tipo', 'otro').strip().lower(),
+            TIPOS_ADJUNTO_VALIDOS,
+            'Tipo'
+        )
+
+        tamanio = data.get('tamanio', 0)
+
+        solicitud = self.request_repository.get_by_id(solicitud_id)
         if not solicitud:
             raise ValueError("Solicitud no encontrada.")
         if solicitud.estado in ('completada', 'cancelada'):
@@ -178,10 +176,14 @@ class RequestServices:
                 f"'{solicitud.estado}'."
             )
 
-        adjunto = RequestRepository().create_attachment(
-            solicitud=solicitud, archivo=archivo, tipo=tipo,
-            nombre=nombre.strip(), tamanio=tamanio,
-            descripcion=descripcion.strip(), usuario=usuario,
+        adjunto = self.request_repository.create_attachment(
+            solicitud=solicitud,
+            archivo=archivo,
+            tipo=tipo,
+            nombre=nombre,
+            tamanio=tamanio,
+            descripcion=descripcion,
+            usuario=usuario,
         )
         return self._format_attachment(adjunto)
 

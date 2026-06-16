@@ -1,6 +1,11 @@
 from django.db import transaction
 
 from information_app.repositories.equipment_repository import EquipmentRepository
+from information_app.services.services_utils import (
+    format_technician_data,
+    validate_required_fields,
+    validate_enum
+)
 
 VALID_CRITICALITIES = {'alta', 'media', 'baja'}
 REQUIRED_EQUIPMENT_FIELDS = {
@@ -16,7 +21,7 @@ class EquipmentServices:
     # ── Module -> Equipment registration ────────────────────────────────────────────
     @transaction.atomic
     def register_equipment(self, data: dict) -> dict:
-        self.validate_equipment_data(data, REQUIRED_EQUIPMENT_FIELDS)
+        validate_required_fields(data, REQUIRED_EQUIPMENT_FIELDS)
 
         name           = data['name'].strip()
         inventory_code = data['inventory_code'].strip()
@@ -64,13 +69,6 @@ class EquipmentServices:
 
         return self.format_equipment_data(equipment)
 
-    @staticmethod
-    def validate_equipment_data(data: dict, fields: list) -> None:
-        for field in fields:
-            value = data.get(field)
-            if value is None or str(value).strip() == '':
-                raise ValueError(f"Field '{field}' is required and cannot be empty.")
-
     @transaction.atomic
     def update_equipment(self, equipment_id: int, data: dict) -> dict:
 
@@ -88,67 +86,40 @@ class EquipmentServices:
 
         fields_to_update = {}
 
-        if 'name' in data:
-            name = str(data['name']).strip()
-            if not name:
-                raise ValueError("Field 'name' cannot be empty.")
-            fields_to_update['nombre'] = name
-
-        if 'inventory_code' in data:
-            inventory_code = str(data['inventory_code']).strip()
-            if not inventory_code:
-                raise ValueError("Field 'inventory_code' cannot be empty.")
-            if self.equipment_repository.inventory_code_exists_for_other(
-                inventory_code, equipment_id
-            ):
-                raise ValueError(
-                    f"Inventory code '{inventory_code}' is already registered. "
-                    "Please use a different code."
-                )
-            fields_to_update['codigo_inventario'] = inventory_code
-
-        if 'model' in data:
-            model = str(data['model']).strip()
-            if not model:
-                raise ValueError("Field 'model' cannot be empty.")
-            fields_to_update['modelo'] = model
-
-        if 'brand' in data:
-            brand = str(data['brand']).strip()
-            if not brand:
-                raise ValueError("Field 'brand' cannot be empty.")
-            fields_to_update['marca'] = brand
-
-        if 'location' in data:
-            location = str(data['location']).strip()
-            if not location:
-                raise ValueError("Field 'location' cannot be empty.")
-            fields_to_update['ubicacion'] = location
+        for field_key, db_field in [
+            ('name', 'nombre'),
+            ('inventory_code', 'codigo_inventario'),
+            ('model', 'modelo'),
+            ('brand', 'marca'),
+            ('location', 'ubicacion'),
+        ]:
+            if field_key in data:
+                _, value = self._validate_and_transform_field(data, field_key, db_field)
+                if field_key == 'inventory_code':
+                    if self.equipment_repository.inventory_code_exists_for_other(
+                        value, equipment_id
+                    ):
+                        raise ValueError(
+                            f"Inventory code '{value}' is already registered. "
+                            "Please use a different code."
+                        )
+                fields_to_update[db_field] = value
 
         if 'status' in data:
             st = str(data['status']).strip().lower()
-            if st not in VALID_STATUSES:
-                raise ValueError(
-                    f"Status '{st}' is not valid. "
-                    f"Allowed values: {', '.join(sorted(VALID_STATUSES))}."
-                )
-            fields_to_update['estado'] = st
+            fields_to_update['estado'] = validate_enum(st, VALID_STATUSES, 'Status')
 
         if 'criticality' in data:
-            criticality = str(data['criticality']).strip().lower()
-            if criticality not in VALID_CRITICALITIES:
-                raise ValueError(
-                    f"Criticality '{criticality}' is not valid. "
-                    f"Allowed values: {', '.join(sorted(VALID_CRITICALITIES))}."
-                )
-            fields_to_update['criticidad'] = criticality
+            crit = str(data['criticality']).strip().lower()
+            fields_to_update['criticidad'] = validate_enum(
+                crit, VALID_CRITICALITIES, 'Criticality'
+            )
 
         if not fields_to_update:
             raise ValueError("No valid fields provided for update.")
 
         equipment = self.equipment_repository.update(equipment, fields_to_update)
         return self.format_equipment_data(equipment)
-
 
     # ── Module -> Equipment management ────────────────────────────────────────────────
     @staticmethod
@@ -173,19 +144,6 @@ class EquipmentServices:
         }
 
     @staticmethod
-    def format_technician_data(technician) -> dict:
-        if not technician:
-            return None
-
-        return {
-            'id': technician.usuario.id,
-            'name': technician.usuario.nombre,
-            'email': technician.usuario.correo,
-            'specialty': technician.especialidad,
-            'contact': technician.contacto,
-        }
-
-    @staticmethod
     def format_status_history_data(status_history) -> dict:
         return {
             'id': status_history.id,
@@ -207,7 +165,7 @@ class EquipmentServices:
             'description': intervention.descripcion,
             'observations': intervention.observaciones,
             'performed_at': intervention.fecha_intervencion.isoformat(),
-            'technician': EquipmentServices.format_technician_data(
+            'technician': format_technician_data(
                 intervention.tecnico
             ),
         }
@@ -228,7 +186,7 @@ class EquipmentServices:
                 'end_time': request.horario_agendado.hora_fin.isoformat(),
             } if request.horario_agendado else None,
             'assigned_technicians': [
-                EquipmentServices.format_technician_data(
+                format_technician_data(
                     assignment.tecnico
                 )
                 for assignment in request.asignaciones.all()
@@ -305,3 +263,19 @@ class EquipmentServices:
             )
 
         return self.format_equipment_data(equipment)
+
+    # ── Module -> Helpers ────────────────────────────────────────────────
+
+    @staticmethod
+    def _validate_and_transform_field(
+        data: dict, field_key: str,
+        db_field: str, allow_empty: bool = False
+    ) -> tuple:
+
+        if field_key not in data:
+            return None, None
+
+        value = str(data[field_key]).strip()
+        if not value and not allow_empty:
+            raise ValueError(f"Field '{field_key}' cannot be empty.")
+        return db_field, value

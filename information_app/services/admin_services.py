@@ -29,11 +29,12 @@ class AdminServices:
             umbral = int(umbral_dias)
             if umbral < 0:
                 raise ValueError()
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exc:
             raise ValueError(
                 f"El parámetro 'umbral_dias' debe ser un número entero positivo. "
                 f"Valor recibido: '{umbral_dias}'."
-            )
+            ) from exc
+
         equipos = self.repo.get_out_of_service_equipment(umbral)
         return {
             'umbral_dias': umbral,
