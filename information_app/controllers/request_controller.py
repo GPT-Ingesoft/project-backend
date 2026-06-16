@@ -1,18 +1,15 @@
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from information_app.services.request_services import RequestServices
 from information_app.controllers.controller_utils import (
     handle_exceptions,
-    ControllerMixin,
     require_field,
     ValidationError,
+    BaseAPIView
 )
 
-class RequestTechnicianReassignmentView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestTechnicianReassignmentView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, request_id):
@@ -24,9 +21,7 @@ class RequestTechnicianReassignmentView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class RequestApproveView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestApproveView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, solicitud_id):
@@ -40,9 +35,7 @@ class RequestApproveView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class LabScheduleView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class LabScheduleView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -62,9 +55,7 @@ class LabScheduleView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class RequestStatusView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestStatusView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, solicitud_id):
@@ -80,9 +71,7 @@ class RequestStatusView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class RequestAttachmentView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestAttachmentView(BaseAPIView):
 
     @handle_exceptions
     def post(self, request, solicitud_id):
@@ -112,9 +101,7 @@ class RequestAttachmentView(ControllerMixin, APIView):
 
 #################### DEBUG ####################
 
-class RequestApproveDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestApproveDebugView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, solicitud_id):
@@ -124,9 +111,7 @@ class RequestApproveDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class RequestStatusDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestStatusDebugView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, solicitud_id):
@@ -141,9 +126,7 @@ class RequestStatusDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class RequestAttachmentDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestAttachmentDebugView(BaseAPIView):
 
     @handle_exceptions
     def post(self, request, solicitud_id):
@@ -169,9 +152,7 @@ class RequestAttachmentDebugView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
-class LabScheduleDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class LabScheduleDebugView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):

@@ -1,12 +1,13 @@
 import functools
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ParseError
 from django.db import DatabaseError
 
 from information_app.services.user_services import UserServices
 
-HANDLED_EXCEPTIONS = (ValueError, DatabaseError, TypeError, AttributeError, PermissionError)
+HANDLED_EXCEPTIONS = (ValueError, DatabaseError, PermissionError)
 
 # ── Auxiliar methods ────────────────────────────────────────────
 
@@ -43,6 +44,10 @@ def validate_json_request(request):
         raise ValidationError('El cuerpo de la solicitud debe ser un objeto JSON.')
     return data
 
+class BaseAPIView(ControllerMixin, APIView):
+    authentication_classes = []
+    permission_classes = []
+
 # ── Exceptions decorator ────────────────────────────────────────────
 
 def handle_exceptions(func):
@@ -70,7 +75,7 @@ def handle_standard_error(exc):
     if isinstance(exc, PermissionError):
         return Response({'error': str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
-    if isinstance(exc, (DatabaseError, TypeError, AttributeError)):
+    if isinstance(exc, (DatabaseError)):
         return Response(
             {'error': 'Error interno. Contacte al soporte.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

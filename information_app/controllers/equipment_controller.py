@@ -1,15 +1,14 @@
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from information_app.services.equipment_services import EquipmentServices
 from information_app.controllers.controller_utils import (
     handle_exceptions,
-    ControllerMixin,
     require_field,
+    BaseAPIView
 )
 
-class EquipmentView(ControllerMixin, APIView):
+class EquipmentView(BaseAPIView):
 
     # ── GET /api/equipment/ ────────────────────────────────────────────────────
     @handle_exceptions
@@ -18,7 +17,7 @@ class EquipmentView(ControllerMixin, APIView):
         equipment = EquipmentServices().list_equipment()
         return Response({'equipment': equipment}, status=status.HTTP_200_OK)
 
-class RegisterEquipmentView(ControllerMixin, APIView):
+class RegisterEquipmentView(BaseAPIView):
 
     # ── POST /api/equipment/ ───────────────────────────────────────────────────
     @handle_exceptions
@@ -31,7 +30,7 @@ class RegisterEquipmentView(ControllerMixin, APIView):
             status=status.HTTP_201_CREATED,
         )
 
-class UpdateEquipmentView(ControllerMixin, APIView):
+class UpdateEquipmentView(BaseAPIView):
 
     # ── PATCH /api/equipment/<id>/ ─────────────────────────────────────────────
     @handle_exceptions
@@ -44,7 +43,7 @@ class UpdateEquipmentView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class EquipmentAvailabilityView(APIView):
+class EquipmentAvailabilityView(BaseAPIView):
 
     # ── GET /api/equipment/<id>/availability/ ──────────────────────────────────
     @handle_exceptions
@@ -55,7 +54,7 @@ class EquipmentAvailabilityView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class EquipmentDecommissionView(ControllerMixin, APIView):
+class EquipmentDecommissionView(BaseAPIView):
 
     # ── PATCH /api/equipment/<id>/decommission/ ────────────────────────────────
     @handle_exceptions
@@ -69,7 +68,7 @@ class EquipmentDecommissionView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class EquipmentCriticalityView(ControllerMixin, APIView):
+class EquipmentCriticalityView(BaseAPIView):
 
     # ── PATCH /api/equipment/<id>/criticality/ ─────────────────────────────────
     @handle_exceptions
@@ -83,7 +82,7 @@ class EquipmentCriticalityView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class EquipmentHistoryView(APIView):
+class EquipmentHistoryView(BaseAPIView):
 
     # ── GET /api/equipment/<id>/history/ ───────────────────────────────────────
     @handle_exceptions
@@ -93,7 +92,7 @@ class EquipmentHistoryView(APIView):
 
 #################### DEBUG ####################
 
-class EquipmentDebugView(APIView):
+class EquipmentDebugView(BaseAPIView):
 
     # ── GET /api/equipment/debug/ ──────────────────────────────────────────────
     @handle_exceptions
@@ -101,7 +100,7 @@ class EquipmentDebugView(APIView):
         equipment = EquipmentServices().list_equipment()
         return Response({'equipment': equipment}, status=status.HTTP_200_OK)
 
-class EquipmentAvailabilityDebugView(APIView):
+class EquipmentAvailabilityDebugView(BaseAPIView):
 
     # ── GET /api/equipment/<id>/availability_debug/ ────────────────────────────
     @handle_exceptions
@@ -112,7 +111,7 @@ class EquipmentAvailabilityDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class EquipmentDecommissionDebugView(APIView):
+class EquipmentDecommissionDebugView(BaseAPIView):
 
     # ── PATCH /api/equipment/<id>/decommission_debug/ ──────────────────────────
     @handle_exceptions
@@ -124,7 +123,7 @@ class EquipmentDecommissionDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class EquipmentCriticalityDebugView(APIView):
+class EquipmentCriticalityDebugView(BaseAPIView):
 
     # ── PATCH /api/equipment/<id>/criticality_debug/ ───────────────────────────
     @handle_exceptions
@@ -136,7 +135,7 @@ class EquipmentCriticalityDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class RegisterEquipmentDebugView(ControllerMixin, APIView):
+class RegisterEquipmentDebugView(BaseAPIView):
 
     # ── POST /api/equipment/debug/ ─────────────────────────────────────────────
     @handle_exceptions
@@ -148,7 +147,7 @@ class RegisterEquipmentDebugView(ControllerMixin, APIView):
             status=status.HTTP_201_CREATED,
         )
 
-class UpdateEquipmentDebugView(ControllerMixin, APIView):
+class UpdateEquipmentDebugView(BaseAPIView):
 
     # ── PATCH /api/equipment/<id>/debug/ ──────────────────────────────────────
     @handle_exceptions

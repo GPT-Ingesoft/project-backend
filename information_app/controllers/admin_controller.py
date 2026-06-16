@@ -1,16 +1,13 @@
-from rest_framework.views    import APIView
 from rest_framework.response import Response
 from rest_framework          import status
 
 from information_app.services.admin_services import AdminServices, UMBRAL_DIAS_DEFAULT
 from information_app.controllers.controller_utils import (
     handle_exceptions,
-    ControllerMixin,
+    BaseAPIView
 )
 
-class NotificationHistoryView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class NotificationHistoryView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -21,9 +18,7 @@ class NotificationHistoryView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class FailureReportView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class FailureReportView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -34,9 +29,7 @@ class FailureReportView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class RepairTimeReportView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RepairTimeReportView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -47,9 +40,7 @@ class RepairTimeReportView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class OutOfServiceReportView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class OutOfServiceReportView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -58,9 +49,7 @@ class OutOfServiceReportView(ControllerMixin, APIView):
         reporte     = AdminServices().get_out_of_service_equipment_report(umbral_dias)
         return Response(reporte, status=status.HTTP_200_OK)
 
-class ActiveEquipmentDashboardView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class ActiveEquipmentDashboardView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -73,9 +62,7 @@ class ActiveEquipmentDashboardView(ControllerMixin, APIView):
 
 #################### DEBUG ####################
 
-class NotificationHistoryDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class NotificationHistoryDebugView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -85,9 +72,7 @@ class NotificationHistoryDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class FailureReportDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class FailureReportDebugView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -97,9 +82,7 @@ class FailureReportDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class RepairTimeReportDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RepairTimeReportDebugView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -109,9 +92,7 @@ class RepairTimeReportDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class OutOfServiceReportDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class OutOfServiceReportDebugView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -119,9 +100,7 @@ class OutOfServiceReportDebugView(APIView):
         reporte = AdminServices().get_out_of_service_equipment_report(umbral_dias)
         return Response(reporte, status=status.HTTP_200_OK)
 
-class ActiveEquipmentDashboardDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class ActiveEquipmentDashboardDebugView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):

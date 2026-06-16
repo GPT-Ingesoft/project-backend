@@ -1,4 +1,3 @@
-from rest_framework.views     import APIView
 from rest_framework.response  import Response
 from rest_framework           import status
 from django.shortcuts         import redirect
@@ -6,25 +5,21 @@ from django.shortcuts         import redirect
 from information_app.services.user_services import UserServices
 from information_app.controllers.controller_utils import (
     handle_exceptions,
-    ControllerMixin,
     ValidationError,
     require_field,
+    BaseAPIView
 )
 
 #################### Auth ####################
 
-class OAuthLoginView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class OAuthLoginView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request, provider):
         url = UserServices().generate_oauth_url(provider)
         return redirect(url)
 
-class OAuthCallbackView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class OAuthCallbackView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request, provider):
@@ -40,9 +35,7 @@ class OAuthCallbackView(APIView):
         result = UserServices().process_oauth_callback(provider, code, state)
         return Response(result, status=status.HTTP_200_OK)
 
-class TokenRefreshView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class TokenRefreshView(BaseAPIView):
 
     @handle_exceptions
     def post(self, request):
@@ -52,9 +45,7 @@ class TokenRefreshView(ControllerMixin, APIView):
         result = UserServices().refresh_token(refresh)
         return Response(result, status=status.HTTP_200_OK)
 
-class MeView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class MeView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -63,9 +54,7 @@ class MeView(ControllerMixin, APIView):
 
 #################### Register User ####################
 
-class UpdateProfileView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class UpdateProfileView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request):
@@ -78,9 +67,7 @@ class UpdateProfileView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class RegisterUserView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RegisterUserView(BaseAPIView):
 
     @handle_exceptions
     def post(self, request):
@@ -95,9 +82,7 @@ class RegisterUserView(ControllerMixin, APIView):
 
 #################### User management ####################
 
-class AssignRoleView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class AssignRoleView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, user_id):
@@ -110,9 +95,7 @@ class AssignRoleView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class ChangeStatusView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class ChangeStatusView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, user_id):
@@ -132,9 +115,7 @@ class ChangeStatusView(ControllerMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-class ListUsersView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class ListUsersView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
@@ -144,9 +125,7 @@ class ListUsersView(ControllerMixin, APIView):
 
 #################### DEBUG ####################
 
-class RegisterUserDebugView(ControllerMixin, APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RegisterUserDebugView(BaseAPIView):
 
     @handle_exceptions
     def post(self, request):
@@ -157,9 +136,7 @@ class RegisterUserDebugView(ControllerMixin, APIView):
             status=status.HTTP_201_CREATED,
         )
 
-class AssignRoleDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class AssignRoleDebugView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, user_id):
@@ -170,9 +147,7 @@ class AssignRoleDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class ChangeStatusDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class ChangeStatusDebugView(BaseAPIView):
 
     @handle_exceptions
     def patch(self, request, user_id):
@@ -190,9 +165,7 @@ class ChangeStatusDebugView(APIView):
             status=status.HTTP_200_OK,
         )
 
-class ListUsersDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class ListUsersDebugView(BaseAPIView):
 
     @handle_exceptions
     def get(self, request):
