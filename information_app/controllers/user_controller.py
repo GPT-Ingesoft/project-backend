@@ -171,3 +171,13 @@ class ListUsersDebugView(BaseAPIView):
     def get(self, request):
         users = UserServices().list_users()
         return Response({'users': users}, status=status.HTTP_200_OK)
+
+class VerifyAccessDebugView(BaseAPIView):
+
+    @handle_exceptions
+    def get(self, request, user_id):
+        user = UserServices().verify_access(user_id)
+        return Response(
+            {'message': 'Access granted.', 'user': user},
+            status=status.HTTP_200_OK,
+        )

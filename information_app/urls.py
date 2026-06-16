@@ -14,6 +14,7 @@ from information_app.controllers.user_controller import (
     AssignRoleDebugView,
     ChangeStatusDebugView,
     ListUsersDebugView,
+    VerifyAccessDebugView,
 )
 from information_app.controllers.equipment_controller import (
     EquipmentView,
@@ -152,6 +153,13 @@ urlpatterns = [
         ChangeStatusDebugView.as_view(),
         name='change-status-debug'
     ),
+
+    path(
+        'users/<int:user_id>/access_debug/',
+        VerifyAccessDebugView.as_view(),
+        name='verify-access-debug'
+    ),
+
     path('equipment/debug/', EquipmentDebugView.as_view(), name='list-equipment-debug'),
     path(
         'equipment/register_debug/',
