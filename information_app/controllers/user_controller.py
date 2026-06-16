@@ -4,6 +4,12 @@ from rest_framework           import status
 from django.shortcuts         import redirect
 
 from information_app.services.user_services import UserServices
+from information_app.controllers.controller_utils import (
+    handle_exceptions,
+    ControllerMixin,
+    ValidationError,
+    require_field,
+)
 
 #################### Auth ####################
 
@@ -11,357 +17,184 @@ class OAuthLoginView(APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def get(self, request, provider):
-        service = UserServices()
-        try:
-            url = service.generate_oauth_url(provider)
-            return redirect(url)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        url = UserServices().generate_oauth_url(provider)
+        return redirect(url)
 
 class OAuthCallbackView(APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def get(self, request, provider):
         error = request.GET.get('error')
-        if error:
-            return Response(
-                {'error': f'Provider denied access: {error}'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         code  = request.GET.get('code')
         state = request.GET.get('state')
 
+        if error:
+            raise ValidationError(f'Provider denied access: {error}')
         if not code or not state:
-            return Response(
-                {'error': 'Missing callback parameters (code, state).'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError('Missing callback parameters (code, state).')
 
-        service = UserServices()
-        try:
-            result = service.process_oauth_callback(provider, code, state)
-            return Response(result, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except PermissionError as e:
-            return Response({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
-        except ConnectionError as e:
-            return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        result = UserServices().process_oauth_callback(provider, code, state)
+        return Response(result, status=status.HTTP_200_OK)
 
-class TokenRefreshView(APIView):
+class TokenRefreshView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def post(self, request):
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        data    = self.get_json_data(request)
+        refresh = require_field(data, 'refresh')
 
-        refresh = data.get('refresh')
-        if not refresh:
-            return Response(
-                {'error': 'Field "refresh" is required.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        result = UserServices().refresh_token(refresh)
+        return Response(result, status=status.HTTP_200_OK)
 
-        service = UserServices()
-        try:
-            result = service.refresh_token(refresh)
-            return Response(result, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-class MeView(APIView):
+class MeView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def get(self, request):
-        service = UserServices()
-        try:
-            user = service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        return Response(
-            UserServices.format_user_data(user),
-            status=status.HTTP_200_OK,
-        )
+        user = self.get_user(request)
+        return Response(UserServices.format_user_data(user), status=status.HTTP_200_OK)
 
 #################### Register User ####################
 
-class UpdateProfileView(APIView):
+class UpdateProfileView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def patch(self, request):
-        service = UserServices()
+        user         = self.get_user(request)
+        data         = self.get_json_data(request)
+        updated_user = UserServices().update_own_profile(user, data)
 
-        try:
-            user = service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        return Response(
+            {'message': 'Profile updated successfully.', 'user': updated_user},
+            status=status.HTTP_200_OK,
+        )
 
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {
-                    'error': 'The request body must be a valid JSON object. '
-                             'Make sure to include the header Content-Type: application/json'
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            updated_user = service.update_own_profile(user, data)
-
-            return Response(
-                {
-                    'message': 'Profile updated successfully.',
-                    'user': updated_user,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        except ValueError as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-class RegisterUserView(APIView):
+class RegisterUserView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def post(self, request):
-        service = UserServices()
+        self.get_lab_technician(request)
+        data     = self.get_json_data(request)
+        new_user = UserServices().register_user(data)
 
-        try:
-            login_user = service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        if not service.is_lab_technician(login_user):
-            return Response(
-                {'error': 'Only lab technician users can register new users.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            new_user = service.register_user(data)
-            return Response(
-                {'message': 'User registered successfully.', 'user': new_user},
-                status=status.HTTP_201_CREATED,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        return Response(
+            {'message': 'User registered successfully.', 'user': new_user},
+            status=status.HTTP_201_CREATED,
+        )
 
 #################### User management ####################
 
-class AssignRoleView(APIView):
+class AssignRoleView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def patch(self, request, user_id):
-        service = UserServices()
-        try:
-            logged_user = service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        self.get_lab_technician(request)
+        role = require_field(request.data, 'role')
 
-        if not service.is_lab_technician(logged_user):
-            return Response({'error': 'Only lab technicians can assign roles.'}, status=status.HTTP_403_FORBIDDEN)
+        user = UserServices().assign_role(user_id, role)
+        return Response(
+            {'message': 'Role updated successfully.', 'user': user},
+            status=status.HTTP_200_OK,
+        )
 
-        role = request.data.get('role', '').strip().lower()
-        if not role:
-            return Response({'error': "Field 'role' is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = service.assign_role(user_id, role)
-            return Response({'message': 'Role updated successfully.', 'user': user}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class ChangeStatusView(APIView):
+class ChangeStatusView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def patch(self, request, user_id):
-        service = UserServices()
-        try:
-            logged_user = service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        if not service.is_lab_technician(logged_user):
-            return Response({'error': 'Only lab technicians can change user status.'}, status=status.HTTP_403_FORBIDDEN)
-
+        self.get_lab_technician(request)
         active = request.data.get('active')
+
         if active is None:
-            return Response({'error': "Field 'active' is required."}, status=status.HTTP_400_BAD_REQUEST)
-
+            raise ValidationError("Field 'active' is required.")
         if not isinstance(active, bool):
-            return Response({'error': "Field 'active' must be true or false."}, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError("Field 'active' must be true or false.")
 
-        try:
-            user = service.change_status(user_id, active)
-            action = 'activated' if active else 'deactivated'
-            return Response({'message': f'Account {action} successfully.', 'user': user}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        user   = UserServices().change_status(user_id, active)
+        action = 'activated' if active else 'deactivated'
 
-class ListUsersView(APIView):
+        return Response(
+            {'message': f'Account {action} successfully.', 'user': user},
+            status=status.HTTP_200_OK,
+        )
+
+class ListUsersView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def get(self, request):
-        service = UserServices()
-        try:
-            logged_user = service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        if not service.is_lab_technician(logged_user):
-            return Response({'error': 'Only lab technicians can list users.'}, status=status.HTTP_403_FORBIDDEN)
-
-        try:
-            users = service.list_users()
-            return Response({'users': users}, status=status.HTTP_200_OK)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.get_lab_technician(request)
+        users = UserServices().list_users()
+        return Response({'users': users}, status=status.HTTP_200_OK)
 
 #################### DEBUG ####################
 
-class RegisterUserDebugView(APIView):
+class RegisterUserDebugView(ControllerMixin, APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def post(self, request):
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        service = UserServices()
-        try:
-            user = service.register_user(data)
-            return Response(
-                {'message': 'User registered successfully.', 'user': user},
-                status=status.HTTP_201_CREATED,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        data = self.get_json_data(request)
+        user = UserServices().register_user(data)
+        return Response(
+            {'message': 'User registered successfully.', 'user': user},
+            status=status.HTTP_201_CREATED,
+        )
 
 class AssignRoleDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def patch(self, request, user_id):
-        role = request.data.get('role', '').strip().lower()
-        if not role:
-            return Response({'error': "Field 'role' is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        service = UserServices()
-        try:
-            user = service.assign_role(user_id, role)
-            return Response({'message': 'Role updated successfully.', 'user': user}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        role = require_field(request.data, 'role')
+        user = UserServices().assign_role(user_id, role)
+        return Response(
+            {'message': 'Role updated successfully.', 'user': user},
+            status=status.HTTP_200_OK,
+        )
 
 class ChangeStatusDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def patch(self, request, user_id):
         active = request.data.get('active')
         if active is None:
-            return Response({'error': "Field 'active' is required."}, status=status.HTTP_400_BAD_REQUEST)
-
+            raise ValidationError("Field 'active' is required.")
         if not isinstance(active, bool):
-            return Response({'error': "Field 'active' must be true or false."}, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError("Field 'active' must be true or false.")
 
-        service = UserServices()
-        try:
-            user = service.change_status(user_id, active)
-            action = 'activated' if active else 'deactivated'
-            return Response({'message': f'Account {action} successfully.', 'user': user}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        user   = UserServices().change_status(user_id, active)
+        action = 'activated' if active else 'deactivated'
+
+        return Response(
+            {'message': f'Account {action} successfully.', 'user': user},
+            status=status.HTTP_200_OK,
+        )
 
 class ListUsersDebugView(APIView):
     authentication_classes = []
     permission_classes     = []
 
+    @handle_exceptions
     def get(self, request):
-        service = UserServices()
-        try:
-            users = service.list_users()
-            return Response({'users': users}, status=status.HTTP_200_OK)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        users = UserServices().list_users()
+        return Response({'users': users}, status=status.HTTP_200_OK)

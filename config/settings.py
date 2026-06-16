@@ -145,6 +145,10 @@ GOOGLE_REDIRECT_URI  = env('GOOGLE_REDIRECT_URI')
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'DEFAULT_PERMISSION_CLASSES':     [],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',  # ← Para renderizar HTML en navegador
+    ],
 }
 
 # ── Cache para el state OAuth (anti-CSRF) — Redis en producción ───────────────

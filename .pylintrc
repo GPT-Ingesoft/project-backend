@@ -4,6 +4,9 @@ init-hook=
 
 load-plugins=pylint_django
 
+ignore-paths=
+    .*/migrations/.*,
+
 [django]
 django-settings-module=config.settings
 

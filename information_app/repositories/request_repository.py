@@ -1,6 +1,8 @@
-from information_app.models import Asignacion, Solicitud, Tecnico
-from ..models import Solicitud, HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion
+
 from django.utils import timezone
+
+from information_app.models import Asignacion, Solicitud, Tecnico
+from information_app.models import HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion
 
 ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 ESTADOS_CIERRE  = {'completada', 'cancelada'}
@@ -69,7 +71,11 @@ class RequestRepository:
         )
         return solicitud
 
-    def change_status(self, solicitud: Solicitud, nuevo_estado: str, motivo: str, usuario) -> Solicitud:
+    def change_status(
+            self, solicitud: Solicitud, nuevo_estado: str,
+            motivo: str, usuario
+    ) -> Solicitud:
+
         # RF_37: cambio manual con motivo obligatorio
         # RF_51: si el estado es de cierre, guarda fecha_cierre
         estado_anterior = solicitud.estado

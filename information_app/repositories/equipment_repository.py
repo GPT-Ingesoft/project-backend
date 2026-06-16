@@ -16,7 +16,7 @@ class EquipmentRepository:
 
     def serial_number_exists(self, serial_number: str) -> bool:
         return Equipo.objects.filter(numero_serie=serial_number).exists()
-    
+
     def inventory_code_exists_for_other(self, inventory_code: str, equipment_id: int) -> bool:
         return Equipo.objects.filter(
             codigo_inventario=inventory_code
@@ -36,7 +36,7 @@ class EquipmentRepository:
             estado=status,
             criticidad=criticality,
         )
-    
+
     def update(self, equipment: Equipo, fields: dict) -> Equipo:
         for attr, value in fields.items():
             setattr(equipment, attr, value)

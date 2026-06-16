@@ -1,306 +1,161 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import request, status
+from rest_framework import status
 
 from information_app.services.equipment_services import EquipmentServices
-from information_app.services.user_services import UserServices
-from information_app.controllers.utils import *
+from information_app.controllers.controller_utils import (
+    handle_exceptions,
+    ControllerMixin,
+    require_field,
+)
 
-HTTP_200_OK = status.HTTP_200_OK
-HTTP_201_CREATED = status.HTTP_201_CREATED
-HTTP_400_BAD_REQUEST = status.HTTP_400_BAD_REQUEST
-HTTP_403_FORBIDDEN = status.HTTP_403_FORBIDDEN
-HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
-HTTP_500_INTERNAL_SERVER_ERROR = status.HTTP_500_INTERNAL_SERVER_ERROR
-
-
-class EquipmentView(APIView):
+class EquipmentView(ControllerMixin, APIView):
 
     # ── GET /api/equipment/ ────────────────────────────────────────────────────
+    @handle_exceptions
     def get(self, request):
-        # Requires an authenticated user
-        user_service = UserServices()
-        try:
-            user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
+        self.get_user(request)
+        equipment = EquipmentServices().list_equipment()
+        return Response({'equipment': equipment}, status=status.HTTP_200_OK)
 
-        service = EquipmentServices()
-        try:
-            equipment = service.list_equipment()
-            return Response({'equipment': equipment}, status=HTTP_200_OK)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+class RegisterEquipmentView(ControllerMixin, APIView):
 
-class RegisterEquipmentView(APIView):
+    # ── POST /api/equipment/ ───────────────────────────────────────────────────
+    @handle_exceptions
     def post(self, request):
-        user_service = UserServices()
-        try:
-            user = user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
+        self.get_lab_technician(request)
+        data      = self.get_json_data(request)
+        equipment = EquipmentServices().register_equipment(data)
+        return Response(
+            {'message': 'Equipment registered successfully.', 'equipment': equipment},
+            status=status.HTTP_201_CREATED,
+        )
 
-        if not UserServices.is_lab_technician(user):
-            return Response({'error': 'Only lab technicians can register equipment.'}, status=HTTP_403_FORBIDDEN)
+class UpdateEquipmentView(ControllerMixin, APIView):
 
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=HTTP_400_BAD_REQUEST,
-            )
-
-        service = EquipmentServices()
-        try:
-            equipment = service.register_equipment(data)
-            return Response(
-                {'message': 'Equipment registered successfully.', 'equipment': equipment},
-                status=HTTP_201_CREATED,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
-class UpdateEquipmentView(APIView):
-    
+    # ── PATCH /api/equipment/<id>/ ─────────────────────────────────────────────
+    @handle_exceptions
     def patch(self, request, equipment_id):
-        user_service = UserServices()
-        try:
-            user = user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
-
-        if not UserServices.is_lab_technician(user):
-            return Response({'error': 'Only lab technicians can update equipment.'}, status=HTTP_403_FORBIDDEN)
-
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=HTTP_400_BAD_REQUEST,
-            )
-
-        service = EquipmentServices()
-        try:
-            equipment = service.update_equipment(equipment_id, data)
-            return Response(
-                {'message': 'Equipment updated successfully.', 'equipment': equipment},
-                status=HTTP_200_OK,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        self.get_lab_technician(request)
+        data      = self.get_json_data(request)
+        equipment = EquipmentServices().update_equipment(equipment_id, data)
+        return Response(
+            {'message': 'Equipment updated successfully.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
 
 class EquipmentAvailabilityView(APIView):
 
     # ── GET /api/equipment/<id>/availability/ ──────────────────────────────────
+    @handle_exceptions
     def get(self, request, equipment_id):
-        service = EquipmentServices()
-        try:
-            equipment = service.verify_availability(equipment_id)
-            return Response({'message': 'Equipment available.', 'equipment': equipment}, status=HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        equipment = EquipmentServices().verify_availability(equipment_id)
+        return Response(
+            {'message': 'Equipment available.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
 
-class EquipmentDecommissionView(APIView):
+class EquipmentDecommissionView(ControllerMixin, APIView):
 
     # ── PATCH /api/equipment/<id>/decommission/ ────────────────────────────────
+    @handle_exceptions
     def patch(self, request, equipment_id):
-        user_service = UserServices()
-        try:
-            user = user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
+        self.get_lab_technician(request)
+        reason = require_field(request.data, 'reason')
 
-        if not UserServices.is_lab_technician(user):
-            return Response({'error': 'Only lab technicians can decommission equipment.'}, status=HTTP_403_FORBIDDEN)
+        equipment = EquipmentServices().decommission_equipment(equipment_id, reason)
+        return Response(
+            {'message': 'Equipment decommissioned successfully.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
 
-        reason = request.data.get('reason', '').strip()
-        if not reason:
-            return Response({'error': "Field 'reason' is required."}, status=HTTP_400_BAD_REQUEST)
-
-        service = EquipmentServices()
-        try:
-            equipment = service.decommission_equipment(equipment_id, reason)
-            return Response({'message': 'Equipment decommissioned successfully.', 'equipment': equipment}, status=HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
-class EquipmentCriticalityView(APIView):
+class EquipmentCriticalityView(ControllerMixin, APIView):
 
     # ── PATCH /api/equipment/<id>/criticality/ ─────────────────────────────────
+    @handle_exceptions
     def patch(self, request, equipment_id):
-        user_service = UserServices()
-        try:
-            user = user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_403_FORBIDDEN)
+        self.get_lab_technician(request)
+        criticality = require_field(request.data, 'criticality').strip().lower()
 
-        if not UserServices.is_lab_technician(user):
-            return Response({'error': 'Only lab technicians can update equipment criticality.'}, status=HTTP_403_FORBIDDEN)
-
-        criticality = request.data.get('criticality', '').strip().lower()
-        if not criticality:
-            return Response({'error': "Field 'criticality' is required."}, status=HTTP_400_BAD_REQUEST)
-
-        service = EquipmentServices()
-        try:
-            equipment = service.update_criticality(equipment_id, criticality)
-            return Response({'message': 'Criticality updated successfully.', 'equipment': equipment}, status=HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        equipment = EquipmentServices().update_criticality(equipment_id, criticality)
+        return Response(
+            {'message': 'Criticality updated successfully.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
 
 class EquipmentHistoryView(APIView):
 
     # ── GET /api/equipment/<id>/history/ ───────────────────────────────────────
+    @handle_exceptions
     def get(self, request, equipment_id):
-        service = EquipmentServices()
-
-        try:
-            history = service.get_equipment_history(equipment_id)
-            return Response(history, status=HTTP_200_OK)
-
-        except ValueError as e:
-            return Response(
-                {'error': str(e)},
-                status=HTTP_400_BAD_REQUEST
-            )
-
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        history = EquipmentServices().get_equipment_history(equipment_id)
+        return Response(history, status=status.HTTP_200_OK)
 
 #################### DEBUG ####################
 
 class EquipmentDebugView(APIView):
 
     # ── GET /api/equipment/debug/ ──────────────────────────────────────────────
+    @handle_exceptions
     def get(self, request):
-        # Debug - List all equipment without authentication
-        service = EquipmentServices()
-        try:
-            equipment = service.list_equipment()
-            return Response({'equipment': equipment}, status=HTTP_200_OK)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        equipment = EquipmentServices().list_equipment()
+        return Response({'equipment': equipment}, status=status.HTTP_200_OK)
 
 class EquipmentAvailabilityDebugView(APIView):
 
     # ── GET /api/equipment/<id>/availability_debug/ ────────────────────────────
+    @handle_exceptions
     def get(self, request, equipment_id):
-        # Debug - RF_08 without authentication
-        service = EquipmentServices()
-        try:
-            equipment = service.verify_availability(equipment_id)
-            return Response({'message': 'Equipment available.', 'equipment': equipment}, status=HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        equipment = EquipmentServices().verify_availability(equipment_id)
+        return Response(
+            {'message': 'Equipment available.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
 
 class EquipmentDecommissionDebugView(APIView):
 
     # ── PATCH /api/equipment/<id>/decommission_debug/ ──────────────────────────
+    @handle_exceptions
     def patch(self, request, equipment_id):
-        # Debug - RF_07 without authentication
-        reason = request.data.get('reason', '').strip()
-        if not reason:
-            return Response({'error': "Field 'reason' is required."}, status=HTTP_400_BAD_REQUEST)
-
-        service = EquipmentServices()
-        try:
-            equipment = service.decommission_equipment(equipment_id, reason)
-            return Response({'message': 'Equipment decommissioned successfully.', 'equipment': equipment}, status=HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+        reason = require_field(request.data, 'reason')
+        equipment = EquipmentServices().decommission_equipment(equipment_id, reason)
+        return Response(
+            {'message': 'Equipment decommissioned successfully.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
 
 class EquipmentCriticalityDebugView(APIView):
 
     # ── PATCH /api/equipment/<id>/criticality_debug/ ───────────────────────────
+    @handle_exceptions
     def patch(self, request, equipment_id):
-        # Debug - RF_09 without authentication
-        criticality = request.data.get('criticality', '').strip().lower()
-        if not criticality:
-            return Response({'error': "Field 'criticality' is required."}, status=HTTP_400_BAD_REQUEST)
+        criticality = require_field(request.data, 'criticality').strip().lower()
+        equipment = EquipmentServices().update_criticality(equipment_id, criticality)
+        return Response(
+            {'message': 'Criticality updated successfully.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
 
-        service = EquipmentServices()
-        try:
-            equipment = service.update_criticality(equipment_id, criticality)
-            return Response({'message': 'Criticality updated successfully.', 'equipment': equipment}, status=HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+class RegisterEquipmentDebugView(ControllerMixin, APIView):
 
-class RegisterEquipmentDebugView(APIView):
+    # ── POST /api/equipment/debug/ ─────────────────────────────────────────────
+    @handle_exceptions
     def post(self, request):
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=HTTP_400_BAD_REQUEST,
-            )
+        data      = self.get_json_data(request)
+        equipment = EquipmentServices().register_equipment(data)
+        return Response(
+            {'message': 'Equipment registered successfully.', 'equipment': equipment},
+            status=status.HTTP_201_CREATED,
+        )
 
-        service = EquipmentServices()
-        try:
-            equipment = service.register_equipment(data)
-            return Response(
-                {'message': 'Equipment registered successfully.', 'equipment': equipment},
-                status=HTTP_201_CREATED,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-        
-class UpdateEquipmentDebugView(APIView):
-    
+class UpdateEquipmentDebugView(ControllerMixin, APIView):
+
+    # ── PATCH /api/equipment/<id>/debug/ ──────────────────────────────────────
+    @handle_exceptions
     def patch(self, request, equipment_id):
-        # Debug - RF_05/RF_06 without authentication
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {'error': 'The request body must be a valid JSON object. '
-                          'Make sure to include the header Content-Type: application/json'},
-                status=HTTP_400_BAD_REQUEST,
-            )
-
-        service = EquipmentServices()
-        try:
-            equipment = service.update_equipment(equipment_id, data)
-            return Response(
-                {'message': 'Equipment updated successfully.', 'equipment': equipment},
-                status=HTTP_200_OK,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Internal error. Please contact support.'}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-        
+        data      = self.get_json_data(request)
+        equipment = EquipmentServices().update_equipment(equipment_id, data)
+        return Response(
+            {'message': 'Equipment updated successfully.', 'equipment': equipment},
+            status=status.HTTP_200_OK,
+        )
