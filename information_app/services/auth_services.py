@@ -11,7 +11,6 @@ from django.core.cache import cache
 from information_app.repositories.user_repository import UserRepository
 from information_app.services.services_utils import format_user_data
 
-
 TOKEN_BYTE_LENGTH   = 32
 TOKEN_ALGORITHM     = 'HS256'
 ACCESS_LIFETIME     = timedelta(hours=1)
@@ -32,7 +31,7 @@ class AuthServices:
     def __init__(self):
         self.user_repository = UserRepository()
 
-    # ── Module -> Oauth 2.0 ─────────────────────────────────────────
+    # ── OAuth 2.0 ────────────────────────────────────────────────────────
 
     def generate_oauth_url(self, provider: str) -> str:
         config = self.get_oauth_config(provider)
@@ -73,9 +72,9 @@ class AuthServices:
             'expires_in': int(ACCESS_LIFETIME.total_seconds()),
         }
 
-    # ── Module -> JWT (JSON Web Token) ─────────────────────────────────────────
+    # ── JWT ──────────────────────────────────────────────────────────────
 
-    def extract_user_from_token(self, request) -> UserRepository:
+    def extract_user_from_token(self, request):
         auth = request.META.get('HTTP_AUTHORIZATION', '')
 
         if not auth.startswith('Bearer '):
@@ -143,7 +142,7 @@ class AuthServices:
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm=TOKEN_ALGORITHM)
 
-    # ── Module -> Helpers ─────────────────────────────────────────
+    # ── Helpers ───────────────────────────────────────────────────────────
 
     @staticmethod
     def get_oauth_config(provider: str) -> dict:

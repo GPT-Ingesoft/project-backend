@@ -1,9 +1,13 @@
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from django.utils import timezone
-
 from information_app.models import Notificacion, Equipo
+from information_app.repositories.repository_utils import BaseRepository
 
-class AdminRepository:
+class AdminRepository(BaseRepository):
+    def get_model(self):
+        return Equipo
+
+    # ── Query operations ─────────────────────────────────────────
 
     def get_notification_history(self):
         return (
@@ -15,7 +19,7 @@ class AdminRepository:
 
     def get_failure_report(self):
         return (
-            Equipo.objects
+            self.get_model()
             .annotate(total_fallas=Count('solicitudes'))
             .filter(total_fallas__gt=0)
             .order_by('-total_fallas')
@@ -24,7 +28,7 @@ class AdminRepository:
 
     def get_repair_time_report(self):
         return (
-            Equipo.objects
+            self.get_model()
             .filter(solicitudes__estado='completada', solicitudes__fecha_cierre__isnull=False)
             .annotate(
                 promedio_horas=ExpressionWrapper(
@@ -40,12 +44,9 @@ class AdminRepository:
     def get_out_of_service_equipment(self, umbral_dias: int):
         ahora = timezone.now()
         equipos = list(
-            Equipo.objects
+            self.get_model()
             .filter(estado='fuera_de_servicio', fecha_baja__isnull=False)
-            .values(
-                'id', 'nombre', 'codigo_inventario','ubicacion',
-                'estado', 'fecha_baja', 'motivo_baja'
-            )
+            .values('id', 'nombre', 'codigo_inventario', 'ubicacion', 'estado', 'fecha_baja', 'motivo_baja')
         )
         resultado = []
         for equipo in equipos:
@@ -57,7 +58,7 @@ class AdminRepository:
 
     def get_active_equipment(self):
         return (
-            Equipo.objects
+            self.get_model()
             .filter(estado__in=('operativo', 'en_mantenimiento'))
             .order_by('nombre')
             .values('id', 'nombre', 'ubicacion', 'estado')
