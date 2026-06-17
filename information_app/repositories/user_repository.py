@@ -27,5 +27,5 @@ class UserRepository(BaseRepository):
     def create_technician(self, user: Usuario, specialty: str, contact: str) -> Tecnico:
         return Tecnico.objects.create(usuario=user, especialidad=specialty, contacto=contact)
 
-    def get_all(self):
+    def get_all(self, order_by: str = None):
         return super().get_all(order_by='nombre')

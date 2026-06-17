@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from django.utils import timezone
 from information_app.models import (
     Asignacion, Solicitud, Tecnico,
@@ -82,18 +83,25 @@ class RequestRepository(BaseRepository):
         return solicitud
 
     def create_attachment(
-        self, solicitud: Solicitud, archivo, tipo: str, nombre: str,
-        tamanio: int, descripcion: str, usuario
+        self, solicitud: Solicitud, attachment: AttachmentData, usuario
     ) -> Adjunto:
         anexo = Anexo.objects.create(
             solicitud=solicitud,
             responsable=usuario,
-            descripcion=descripcion,
+            descripcion=attachment.descripcion,
         )
         return Adjunto.objects.create(
             anexo=anexo,
-            archivo=archivo,
-            tipo=tipo,
-            nombre_archivo=nombre,
-            tamanio_bytes=tamanio,
+            archivo=attachment.archivo,
+            tipo=attachment.tipo,
+            nombre_archivo=attachment.nombre,
+            tamanio_bytes=attachment.tamanio,
         )
+
+@dataclass
+class AttachmentData:
+    archivo: object
+    tipo: str
+    nombre: str
+    tamanio: int
+    descripcion: str

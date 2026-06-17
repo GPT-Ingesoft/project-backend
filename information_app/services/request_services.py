@@ -1,5 +1,8 @@
 from django.db import transaction
-from information_app.repositories.request_repository import RequestRepository
+from information_app.repositories.request_repository import (
+    RequestRepository,
+    AttachmentData,
+)
 from information_app.services.services_utils import (
     format_technician_data,
     validate_enum,
@@ -124,8 +127,15 @@ class RequestServices:
             )
 
         adjunto = self.request_repository.create_attachment(
-            solicitud=solicitud, archivo=archivo, tipo=tipo,
-            nombre=nombre, tamanio=tamanio, descripcion=descripcion, usuario=usuario,
+            solicitud=solicitud,
+            attachment=AttachmentData(
+                archivo=archivo,
+                tipo=tipo,
+                nombre=nombre,
+                tamanio=tamanio,
+                descripcion=descripcion,
+            ),
+            usuario=usuario,
         )
         return self._format_attachment(adjunto)
 

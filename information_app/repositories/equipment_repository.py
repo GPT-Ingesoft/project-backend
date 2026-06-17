@@ -8,8 +8,8 @@ class EquipmentRepository(BaseRepository):
 
     # ── Query operations ──────────────────────────────────────────
 
-    def get_all(self):
-        return super().get_all(order_by='nombre')
+    def get_all(self, order_by: str = None):
+        return super().get_all(order_by=order_by or 'nombre')
 
     def inventory_code_exists(self, inventory_code: str) -> bool:
         return self.exists(codigo_inventario=inventory_code)
