@@ -8,7 +8,11 @@ from information_app.services.services_utils import (
 )
 
 VALID_CRITICALITIES       = {'alta', 'media', 'baja'}
-REQUIRED_EQUIPMENT_FIELDS = {'name', 'inventory_code', 'model', 'brand', 'serial_number', 'location'}
+REQUIRED_EQUIPMENT_FIELDS = {
+    'name', 'inventory_code', 'model',
+    'brand', 'serial_number', 'location'
+}
+
 VALID_STATUSES            = {'operativo', 'en_mantenimiento', 'fuera_de_servicio'}
 
 class EquipmentServices:
@@ -27,8 +31,17 @@ class EquipmentServices:
         brand          = data['brand'].strip()
         serial_number  = data['serial_number'].strip()
         location       = data['location'].strip()
-        status        = validate_enum(data.get('status', 'operativo').strip().lower(), VALID_STATUSES, 'Status')
-        criticality   = validate_enum(data.get('criticality', 'media').strip().lower(), VALID_CRITICALITIES, 'Criticality')
+        status        = validate_enum(
+            data.get('status', 'operativo').strip().lower(),
+            VALID_STATUSES,
+            'Status'
+        )
+
+        criticality   = validate_enum(
+            data.get('criticality', 'media').strip().lower(),
+            VALID_CRITICALITIES,
+            'Criticality'
+        )
 
         if self.equipment_repository.inventory_code_exists(inventory_code):
             raise ValueError(f"Inventory code '{inventory_code}' is already registered.")
@@ -64,7 +77,11 @@ class EquipmentServices:
                 if not value:
                     raise ValueError(f"Field '{field_key}' cannot be empty.")
                 if field_key == 'inventory_code':
-                    if self.equipment_repository.inventory_code_exists_for_other(value, equipment_id):
+                    if self.equipment_repository.inventory_code_exists_for_other(
+                        value,
+                        equipment_id
+                    ):
+
                         raise ValueError(f"Inventory code '{value}' is already registered.")
                 fields_to_update[db_field] = value
 

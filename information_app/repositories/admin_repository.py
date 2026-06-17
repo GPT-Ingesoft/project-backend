@@ -46,7 +46,11 @@ class AdminRepository(BaseRepository):
         equipos = list(
             self.get_model()
             .filter(estado='fuera_de_servicio', fecha_baja__isnull=False)
-            .values('id', 'nombre', 'codigo_inventario', 'ubicacion', 'estado', 'fecha_baja', 'motivo_baja')
+            .values(
+                'id', 'nombre', 'codigo_inventario',
+                'ubicacion', 'estado', 'fecha_baja',
+                'motivo_baja'
+            )
         )
         resultado = []
         for equipo in equipos:

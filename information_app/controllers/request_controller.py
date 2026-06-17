@@ -24,7 +24,10 @@ class RequestApproveView(BaseAPIView):
         usuario = self.get_lab_technician(request)
         solicitud = RequestServices().approve_request(solicitud_id, usuario)
         return Response(
-            {'message': 'Solicitud aprobada. Estado actualizado a En proceso.', 'solicitud': solicitud},
+            {
+                'message': 'Solicitud aprobada. Estado actualizado a En proceso.',
+                'solicitud': solicitud
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -35,7 +38,10 @@ class LabScheduleView(BaseAPIView):
         laboratorio = request.query_params.get('laboratorio', '').strip()
         srv = RequestServices()
         if not laboratorio:
-            return Response({'laboratorios': srv.get_available_laboratories()}, status=status.HTTP_200_OK)
+            return Response(
+                {'laboratorios': srv.get_available_laboratories()},
+                status=status.HTTP_200_OK
+            )
         return Response(
             {'laboratorio': laboratorio, 'horarios': srv.get_lab_schedule(laboratorio)},
             status=status.HTTP_200_OK,

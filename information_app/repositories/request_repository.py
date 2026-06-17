@@ -9,7 +9,7 @@ from information_app.repositories.repository_utils import BaseRepository
 ESTADOS_CIERRE = {'completada', 'cancelada'}
 
 class RequestRepository(BaseRepository):
-    
+
     def get_model(self):
         return Solicitud
 

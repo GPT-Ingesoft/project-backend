@@ -8,21 +8,30 @@ class NotificationHistoryView(BaseAPIView):
     def get(self, request):
         self.get_lab_technician(request)
         historial = AdminServices().get_notification_history()
-        return Response({'total': len(historial), 'notificaciones': historial}, status=status.HTTP_200_OK)
+        return Response(
+            {'total': len(historial),'notificaciones': historial},
+            status=status.HTTP_200_OK
+        )
 
 class FailureReportView(BaseAPIView):
     @handle_exceptions
     def get(self, request):
         self.get_lab_technician(request)
         reporte = AdminServices().get_failure_report()
-        return Response({'total_equipos': len(reporte), 'equipos': reporte}, status=status.HTTP_200_OK)
+        return Response(
+            {'total_equipos': len(reporte), 'equipos': reporte},
+            status=status.HTTP_200_OK
+        )
 
 class RepairTimeReportView(BaseAPIView):
     @handle_exceptions
     def get(self, request):
         self.get_lab_technician(request)
         reporte = AdminServices().get_repair_time_report()
-        return Response({'total_equipos': len(reporte), 'equipos': reporte}, status=status.HTTP_200_OK)
+        return Response(
+            {'total_equipos': len(reporte), 'equipos': reporte},
+            status=status.HTTP_200_OK
+        )
 
 class OutOfServiceReportView(BaseAPIView):
     @handle_exceptions

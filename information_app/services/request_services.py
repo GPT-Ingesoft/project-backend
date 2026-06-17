@@ -80,7 +80,10 @@ class RequestServices:
         transiciones = TRANSICIONES_PERMITIDAS.get(solicitud.estado, set())
         if nuevo_estado not in transiciones:
             if not transiciones:
-                raise ValueError(f"La solicitud en estado '{solicitud.estado}' no puede ser modificada.")
+                raise ValueError(
+                    f"La solicitud en estado '{solicitud.estado}' no puede ser modificada."
+                )
+
             raise ValueError(
                 f"No es posible cambiar de '{solicitud.estado}' a '{nuevo_estado}'. "
                 f"Transiciones permitidas: {', '.join(sorted(transiciones))}."
@@ -105,12 +108,20 @@ class RequestServices:
         if not descripcion:
             raise ValueError("El campo 'descripcion' es obligatorio.")
 
-        tipo = validate_enum(data.get('tipo', 'otro').strip().lower(), TIPOS_ADJUNTO_VALIDOS, 'Tipo')
+        tipo = validate_enum(
+            data.get('tipo', 'otro').strip().lower(),
+            TIPOS_ADJUNTO_VALIDOS,
+            'Tipo'
+        )
+
         tamanio = data.get('tamanio', 0)
 
         solicitud = self._get_request_or_fail(solicitud_id)
         if solicitud.estado in ('completada', 'cancelada'):
-            raise ValueError(f"No se pueden adjuntar archivos a una solicitud en estado '{solicitud.estado}'.")
+            raise ValueError(
+                f"No se pueden adjuntar archivos a una solicitud en estado "
+                f"'{solicitud.estado}'."
+            )
 
         adjunto = self.request_repository.create_attachment(
             solicitud=solicitud, archivo=archivo, tipo=tipo,
