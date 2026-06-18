@@ -121,7 +121,10 @@ class Solicitud(models.Model):
     ]
 
     id = models.AutoField(primary_key=True)
-    descripcion = models.TextField(help_text='Diagnóstico inicial del problema reportado por el usuario.')
+    descripcion = models.TextField(
+        help_text='Diagnóstico inicial del problema reportado por el usuario.'
+    )
+
     prioridad = models.CharField(max_length=50, choices=PRIORIDAD_CHOICES, default='media')
     estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='pendiente')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -152,7 +155,10 @@ class HistorialEstadoSolicitud(models.Model):
     id = models.AutoField(primary_key=True)
     estado_anterior = models.CharField(max_length=50)
     estado_nuevo = models.CharField(max_length=50)
-    motivo = models.TextField(help_text='Razón del cambio de estado. Obligatorio en cambios manuales.')
+    motivo = models.TextField(
+        help_text='Razón del cambio de estado. Obligatorio en cambios manuales.'
+    )
+
     fecha_cambio = models.DateTimeField(auto_now_add=True)
 
     solicitud = models.ForeignKey(
@@ -176,7 +182,10 @@ class HistorialEstadoSolicitud(models.Model):
 
 class Anexo(models.Model):
     id = models.AutoField(primary_key=True)
-    descripcion = models.TextField(help_text='Descripción del contexto o propósito de los archivos adjuntos.')
+    descripcion = models.TextField(
+        help_text='Descripción del contexto o propósito de los archivos adjuntos.'
+    )
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     solicitud = models.ForeignKey(Solicitud, on_delete=models.CASCADE, related_name='anexos')

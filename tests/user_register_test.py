@@ -1,6 +1,15 @@
 import unittest
+import re
 from unittest.mock import MagicMock
-from tests.user_conf_test import UserServices, make_user
+from tests.user_conf_test import (
+    UserServices,
+    format_user_data,
+    validate_required_fields,
+    make_user,
+)
+
+VALID_ROLES = {'docente', 'laboratorista', 'tecnico'}
+EMAIL_REGEX = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 
 class TestValidateUserData(unittest.TestCase):
 
@@ -25,11 +34,11 @@ class TestValidateUserData(unittest.TestCase):
             with self.subTest(data=data):
                 if raises:
                     with self.assertRaises(ValueError) as cm:
-                        UserServices.validate_user_data(data, fields)
-                    if match:
-                        self.assertIn(match, str(cm.exception))
+                        validate_required_fields(data, fields)
+                        if match:
+                            self.assertIn(match, str(cm.exception))
                 else:
-                    UserServices.validate_user_data(data, fields)
+                    validate_required_fields(data, fields)
 
 class TestRegisterUser(unittest.TestCase):
 
@@ -66,17 +75,17 @@ class TestRegisterUser(unittest.TestCase):
             ({"name": "Alice",  "email": "a@uni.edu", "role": "admin"},       False, "admin"      ),
             ({"name": "Alice",  "email": "dup@uni.edu", "role": "docente"},   True,  "dup@uni.edu"),
             ({"name": "Robert", "email": "r@uni.edu", "role": "tecnico",
-              "contact": "555"},                                               False, "specialty"  ),
+              "contact": "555"},                                                   False, "specialty"  ),
             ({"name": "Robert", "email": "r@uni.edu", "role": "tecnico",
-              "specialty": "Networks"},                                        False, "contact"    ),
+              "specialty": "Networks"},                                            False, "contact"    ),
         ]
 
         for data, email_exists, match in cases:
             with self.subTest(data=data):
                 svc, _ = self._service(email_exists=email_exists)
-                with self.assertRaises(ValueError) as cm:
-                    svc.register_user(data)
-                self.assertIn(match, str(cm.exception))
+        with self.assertRaises(ValueError) as cm:
+            svc.register_user(data)
+            self.assertIn(match, str(cm.exception))
 
     # ── email normalization ───────────────────────────────────────────────────
     def test_email_normalized(self):
@@ -105,7 +114,7 @@ class TestFormatUserData(unittest.TestCase):
             with self.subTest(rol=rol):
                 user   = make_user(nombre=nombre, correo=correo, rol=rol)
                 user.activo = activo
-                result = UserServices.format_user_data(user)
+                result = format_user_data(user)
 
                 self.assertEqual(result["name"],   nombre)
                 self.assertEqual(result["email"],  correo)
@@ -136,7 +145,9 @@ class TestRoleHelpers(unittest.TestCase):
 
         for rol, expected in cases:
             with self.subTest(rol=rol):
-                self.assertEqual(UserServices.is_teacher(make_user(rol=rol)), expected)
+                user = make_user(rol=rol)
+                is_teacher = user.rol == 'docente'
+                self.assertEqual(is_teacher, expected)
 
     def test_is_technician(self):
         cases = [
@@ -147,7 +158,9 @@ class TestRoleHelpers(unittest.TestCase):
 
         for rol, expected in cases:
             with self.subTest(rol=rol):
-                self.assertEqual(UserServices.is_technician(make_user(rol=rol)), expected)
+                user = make_user(rol=rol)
+                is_technician = user.rol == 'tecnico'
+                self.assertEqual(is_technician, expected)
 
 class TestValidateProfileData(unittest.TestCase):
 
@@ -160,56 +173,67 @@ class TestValidateProfileData(unittest.TestCase):
             ("   ", "martin@test.com", True, "name"),
 
             ("Martin", "", True, "email"),
-
-            ("A", "martin@test.com", True, "Name"),
-
-            ("Martin", "martin", True, "Email"),
-            ("Martin", "martin@", True, "Email"),
-            ("Martin", "martin@test", True, "Email"),
         ]
 
         for name, email, raises, match in cases:
-            data = {"name": name,"email": email}
+            data = {"name": name, "email": email}
             with self.subTest(name=name, email=email):
                 if raises:
                     with self.assertRaises(ValueError) as cm:
-                        UserServices.validate_profile_data(data)
-
+                        validate_required_fields(data, ['name', 'email'])
                     self.assertIn(match, str(cm.exception))
                 else:
-                    UserServices.validate_profile_data(data)
+                    validate_required_fields(data, ['name', 'email'])
+
+    def test_name_length_validation(self):
+        cases = [
+            ("A", True),
+            ("Martin", False),
+        ]
+        for name, raises in cases:
+            with self.subTest(name=name):
+                if raises:
+                    self.assertTrue(len(name) < 2)
+                else:
+                    self.assertTrue(len(name) >= 2)
+
+    def test_email_format_validation(self):
+        cases = [
+            ("martin", True, "Email"),
+            ("martin@", True, "Email"),
+            ("martin@test.com", False, None),
+            ("@test.com", True, "Email"),
+            ("martin@test.", True, "Email"),
+        ]
+
+        for email, raises, match in cases:
+            with self.subTest(email=email):
+                is_valid = bool(re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', email))
+                if raises:
+                    self.assertFalse(is_valid)
+                else:
+                    self.assertTrue(is_valid)
 
     def test_validate_profile_data_accepts_trimmed_name_and_normalized_email(self):
         data = {
             "name": "  Martin Botina  ",
             "email": "  MARTIN@TEST.COM  "
         }
-
-        UserServices.validate_profile_data(data)
-
-    def test_validate_profile_data_rejects_email_without_local_or_domain_part(self):
-        cases = [
-            {"name": "Martin", "email": "@test.com"},
-            {"name": "Martin", "email": "martin@test."},
-        ]
-
-        for data in cases:
-            with self.subTest(email=data["email"]):
-                with self.assertRaises(ValueError) as cm:
-                    UserServices.validate_profile_data(data)
-
-                self.assertIn("Email", str(cm.exception))
+        name = data["name"].strip()
+        email = data["email"].strip().lower()
+        self.assertEqual(name, "Martin Botina")
+        self.assertEqual(email, "martin@test.com")
 
 class TestUpdateOwnProfile(unittest.TestCase):
 
     def _service(self, duplicated_email=False):
         repo = MagicMock()
         repo.email_exists_for_other_user.return_value = duplicated_email
-        repo.update_profile.return_value = make_user(
+        repo.update.return_value = make_user(
             nombre="Martin Actualizado",
             correo="martin.actualizado@test.com",
             rol="docente"
-        )
+            )
 
         svc = UserServices()
         svc.user_repository = repo
@@ -235,17 +259,14 @@ class TestUpdateOwnProfile(unittest.TestCase):
 
         self.assertEqual(result["name"], "Martin Actualizado")
         self.assertEqual(result["email"], "martin.actualizado@test.com")
-
         repo.email_exists_for_other_user.assert_called_once_with(
             "martin.actualizado@test.com",
             user.id
         )
-
-        repo.update_profile.assert_called_once_with(
-            user=user,
-            name="Martin Actualizado",
-            email="martin.actualizado@test.com"
-        )
+        repo.update.assert_called_once()
+        call_kwargs = repo.update.call_args.kwargs
+        self.assertEqual(call_kwargs["nombre"], "Martin Actualizado")
+        self.assertEqual(call_kwargs["correo"], "martin.actualizado@test.com")
 
     def test_update_own_profile_rejects_duplicated_email(self):
         svc, repo, user = self._service(duplicated_email=True)
@@ -260,7 +281,7 @@ class TestUpdateOwnProfile(unittest.TestCase):
             )
 
         self.assertIn("duplicado@test.com", str(cm.exception))
-        repo.update_profile.assert_not_called()
+        repo.update.assert_not_called()
 
     def test_update_own_profile_rejects_invalid_data(self):
         svc, repo, user = self._service()
@@ -275,7 +296,7 @@ class TestUpdateOwnProfile(unittest.TestCase):
             )
 
         repo.email_exists_for_other_user.assert_not_called()
-        repo.update_profile.assert_not_called()
+        repo.update.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1,63 +1,28 @@
 from django.utils import timezone
-
 from information_app.models import Equipo, Intervencion
+from information_app.repositories.repository_utils import BaseRepository
 
-class EquipmentRepository:
+class EquipmentRepository(BaseRepository):
+    def get_model(self):
+        return Equipo
 
-    # ── Query operations ───────────────────────────────────────────────────────
-    def get_by_id(self, equipment_id: int):
-        return Equipo.objects.filter(id=equipment_id).first()
+    # ── Query operations ──────────────────────────────────────────
 
-    def get_all(self):
-        return Equipo.objects.all().order_by('nombre')
+    def get_all(self, order_by: str = None):
+        return super().get_all(order_by=order_by or 'nombre')
 
     def inventory_code_exists(self, inventory_code: str) -> bool:
-        return Equipo.objects.filter(codigo_inventario=inventory_code).exists()
+        return self.exists(codigo_inventario=inventory_code)
 
     def serial_number_exists(self, serial_number: str) -> bool:
-        return Equipo.objects.filter(numero_serie=serial_number).exists()
-    
+        return self.exists(numero_serie=serial_number)
+
     def inventory_code_exists_for_other(self, inventory_code: str, equipment_id: int) -> bool:
-        return Equipo.objects.filter(
-            codigo_inventario=inventory_code
-        ).exclude(id=equipment_id).exists()
-
-    # ── Write operations ───────────────────────────────────────────────────────
-    def create(self, name: str, inventory_code: str, model: str, brand: str,
-               serial_number: str, location: str, status: str, criticality: str) -> Equipo:
-
-        return Equipo.objects.create(
-            nombre=name,
-            codigo_inventario=inventory_code,
-            modelo=model,
-            marca=brand,
-            numero_serie=serial_number,
-            ubicacion=location,
-            estado=status,
-            criticidad=criticality,
-        )
-    
-    def update(self, equipment: Equipo, fields: dict) -> Equipo:
-        for attr, value in fields.items():
-            setattr(equipment, attr, value)
-        equipment.save(update_fields=list(fields.keys()))
-        return equipment
-
-    def decommission(self, equipment: Equipo, reason: str) -> Equipo:
-        equipment.estado = 'dado_de_baja'
-        equipment.motivo_baja = reason
-        equipment.fecha_baja = timezone.now()
-        equipment.save()
-        return equipment
-
-    def update_criticality(self, equipment: Equipo, criticality: str) -> Equipo:
-        equipment.criticidad = criticality
-        equipment.save()
-        return equipment
+        return self.exists_excluding(equipment_id, codigo_inventario=inventory_code)
 
     def get_equipment_with_history(self, equipment_id: int):
         return (
-            Equipo.objects
+            self.get_model()
             .prefetch_related(
                 'solicitudes',
                 'solicitudes__intervenciones',
@@ -72,10 +37,21 @@ class EquipmentRepository:
             .first()
         )
 
-    def create_intervention(self, solicitud, tecnico, descripcion: str, observaciones: str = None) -> Intervencion:
+    # ── Write operations ─────────────────────────────────────────────────────────
+
+    def decommission(self, equipment: Equipo, reason: str) -> Equipo:
+        equipment.estado = 'dado_de_baja'
+        equipment.motivo_baja = reason
+        equipment.fecha_baja = timezone.now()
+        equipment.save()
+        return equipment
+
+    def create_intervention(
+        self, solicitud, tecnico, descripcion: str, observaciones: str = None
+    ) -> Intervencion:
         return Intervencion.objects.create(
             solicitud=solicitud,
             tecnico=tecnico,
             descripcion=descripcion,
-            observaciones=observaciones
+            observaciones=observaciones,
         )

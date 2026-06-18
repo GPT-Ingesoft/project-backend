@@ -2,13 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 from tests.request_conf_test import RequestServices, make_request, make_user
 
-
 class TestApproveRequest(unittest.TestCase):
-    """
-    RF_35: Cuando se aprueba una solicitud, el módulo de gestión de
-    solicitudes debe actualizar automáticamente el estado a 'En proceso'.
-    """
-
     def _service(self, solicitud=None):
         repo = MagicMock()
         repo.get_by_id.return_value = solicitud
@@ -22,7 +16,7 @@ class TestApproveRequest(unittest.TestCase):
             repo.approve.side_effect = approve
 
         svc = RequestServices()
-        svc.repo = repo
+        svc.request_repository = repo
         return svc, repo
 
     # ── Caso exitoso ───────────────────────────────────────────────────────
@@ -58,7 +52,7 @@ class TestApproveRequest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             svc.approve_request(999, make_user())
 
-        self.assertIn("no encontrada", str(cm.exception))
+        self.assertIn("Request not found", str(cm.exception))
         repo.approve.assert_not_called()
 
     def test_approve_request_already_in_progress_raises_error(self):
@@ -88,7 +82,6 @@ class TestApproveRequest(unittest.TestCase):
             svc.approve_request(3, make_user())
 
         repo.approve.assert_not_called()
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

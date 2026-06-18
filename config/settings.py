@@ -144,7 +144,7 @@ GOOGLE_REDIRECT_URI  = env('GOOGLE_REDIRECT_URI')
 # ── DRF: sin autenticación global (JWT manual en cada endpoint) ───────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
-    'DEFAULT_PERMISSION_CLASSES':     [],
+    'DEFAULT_PERMISSION_CLASSES':     []
 }
 
 # ── Cache para el state OAuth (anti-CSRF) — Redis en producción ───────────────

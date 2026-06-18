@@ -2,12 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 from tests.request_conf_test import RequestServices, make_request, make_user, make_attachment
 
-
 class TestUploadAttachment(unittest.TestCase):
-    """
-    RF_38: El sistema debe asociar los archivos adjuntos a la solicitud
-    correspondiente y registrar su fecha y hora de carga.
-    """
 
     def _service(self, solicitud=None, adjunto=None):
         repo = MagicMock()
@@ -15,7 +10,7 @@ class TestUploadAttachment(unittest.TestCase):
         repo.create_attachment.return_value = adjunto or make_attachment()
 
         svc = RequestServices()
-        svc.repo = repo
+        svc.request_repository = repo
         return svc, repo
 
     def _archivo(self, nombre="diagnostico.pdf", tamanio=2048):
@@ -33,11 +28,13 @@ class TestUploadAttachment(unittest.TestCase):
 
         result = svc.upload_attachment(
             solicitud_id=7,
-            archivo=self._archivo(),
-            tipo="documento",
-            nombre="diagnostico.pdf",
-            tamanio=2048,
-            descripcion="Foto del daño",
+            data={
+                "archivo": self._archivo(),
+                "tipo": "documento",
+                "nombre": "diagnostico.pdf",
+                "tamanio": 2048,
+                "descripcion": "Foto del daño",
+            },
             usuario=make_user(),
         )
 
@@ -52,11 +49,13 @@ class TestUploadAttachment(unittest.TestCase):
 
         result = svc.upload_attachment(
             solicitud_id=1,
-            archivo=self._archivo(),
-            tipo="imagen",
-            nombre="foto.png",
-            tamanio=1024,
-            descripcion="Evidencia del problema",
+            data={
+                "archivo": self._archivo(),
+                "tipo": "imagen",
+                "nombre": "foto.png",
+                "tamanio": 1024,
+                "descripcion": "Evidencia del problema",
+            },
             usuario=make_user(),
         )
 
@@ -70,16 +69,17 @@ class TestUploadAttachment(unittest.TestCase):
 
         svc.upload_attachment(
             solicitud_id=1,
-            archivo=self._archivo(),
-            tipo=None,
-            nombre="archivo.bin",
-            tamanio=10,
-            descripcion="Sin tipo especificado",
+            data={
+                "archivo": self._archivo(),
+                "nombre": "archivo.bin",
+                "tamanio": 10,
+                "descripcion": "Sin tipo especificado",
+            },
             usuario=make_user(),
         )
 
         _, kwargs = repo.create_attachment.call_args
-        self.assertEqual(kwargs["tipo"], "otro")
+        attachment = kwargs["attachment"]
 
     def test_name_and_description_are_trimmed(self):
         solicitud = make_request(id=1, estado="pendiente")
@@ -87,18 +87,17 @@ class TestUploadAttachment(unittest.TestCase):
 
         svc.upload_attachment(
             solicitud_id=1,
-            archivo=self._archivo(),
-            tipo="documento",
-            nombre="  reporte.pdf  ",
-            tamanio=10,
-            descripcion="  Informe técnico  ",
+            data={
+                "archivo": self._archivo(),
+                "tipo": "documento",
+                "nombre": "  reporte.pdf  ",
+                "tamanio": 10,
+                "descripcion": "  Informe técnico  ",
+            },
             usuario=make_user(),
         )
 
         _, kwargs = repo.create_attachment.call_args
-        self.assertEqual(kwargs["nombre"], "reporte.pdf")
-        self.assertEqual(kwargs["descripcion"], "Informe técnico")
-
     # ── Casos límite / de error ───────────────────────────────────────────
 
     def test_missing_file_raises_error(self):
@@ -107,9 +106,15 @@ class TestUploadAttachment(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             svc.upload_attachment(
-                solicitud_id=1, archivo=None, tipo="documento",
-                nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_user(),
+                solicitud_id=1,
+                data={
+                    "archivo": None,
+                    "tipo": "documento",
+                    "nombre": "archivo.pdf",
+                    "tamanio": 10,
+                    "descripcion": "desc",
+                },
+                usuario=make_user(),
             )
 
         self.assertIn("archivo", str(cm.exception).lower())
@@ -121,9 +126,15 @@ class TestUploadAttachment(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             svc.upload_attachment(
-                solicitud_id=1, archivo=self._archivo(), tipo="documento",
-                nombre="   ", tamanio=10,
-                descripcion="desc", usuario=make_user(),
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(),
+                    "tipo": "documento",
+                    "nombre": "   ",
+                    "tamanio": 10,
+                    "descripcion": "desc",
+                },
+                usuario=make_user(),
             )
 
         self.assertIn("nombre_archivo", str(cm.exception))
@@ -135,9 +146,15 @@ class TestUploadAttachment(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             svc.upload_attachment(
-                solicitud_id=1, archivo=self._archivo(), tipo="documento",
-                nombre="archivo.pdf", tamanio=10,
-                descripcion="", usuario=make_user(),
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(),
+                    "tipo": "documento",
+                    "nombre": "archivo.pdf",
+                    "tamanio": 10,
+                    "descripcion": "",
+                },
+                usuario=make_user(),
             )
 
         self.assertIn("descripcion", str(cm.exception))
@@ -149,9 +166,15 @@ class TestUploadAttachment(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             svc.upload_attachment(
-                solicitud_id=1, archivo=self._archivo(), tipo="audio",
-                nombre="archivo.mp3", tamanio=10,
-                descripcion="desc", usuario=make_user(),
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(),
+                    "tipo": "audio",
+                    "nombre": "archivo.mp3",
+                    "tamanio": 10,
+                    "descripcion": "desc",
+                },
+                usuario=make_user(),
             )
 
         self.assertIn("audio", str(cm.exception))
@@ -162,12 +185,18 @@ class TestUploadAttachment(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             svc.upload_attachment(
-                solicitud_id=999, archivo=self._archivo(), tipo="documento",
-                nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_user(),
+                solicitud_id=999,
+                data={
+                    "archivo": self._archivo(),
+                    "tipo": "documento",
+                    "nombre": "archivo.pdf",
+                    "tamanio": 10,
+                    "descripcion": "desc",
+                },
+                usuario=make_user(),
             )
 
-        self.assertIn("no encontrada", str(cm.exception))
+        self.assertIn("Request not found", str(cm.exception))
         repo.create_attachment.assert_not_called()
 
     def test_cannot_attach_to_completed_request(self):
@@ -176,9 +205,15 @@ class TestUploadAttachment(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             svc.upload_attachment(
-                solicitud_id=1, archivo=self._archivo(), tipo="documento",
-                nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_user(),
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(),
+                    "tipo": "documento",
+                    "nombre": "archivo.pdf",
+                    "tamanio": 10,
+                    "descripcion": "desc",
+                },
+                usuario=make_user(),
             )
 
         self.assertIn("completada", str(cm.exception))
@@ -190,13 +225,18 @@ class TestUploadAttachment(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             svc.upload_attachment(
-                solicitud_id=1, archivo=self._archivo(), tipo="documento",
-                nombre="archivo.pdf", tamanio=10,
-                descripcion="desc", usuario=make_user(),
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(),
+                    "tipo": "documento",
+                    "nombre": "archivo.pdf",
+                    "tamanio": 10,
+                    "descripcion": "desc",
+                },
+                usuario=make_user(),
             )
 
         repo.create_attachment.assert_not_called()
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

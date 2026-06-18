@@ -1,34 +1,47 @@
-from information_app.models import (
-    Solicitud,
-    Asignacion,
-    Tecnico,
-    HistorialEstadoSolicitud,
-    Anexo,
-    Adjunto,
-    HorarioAtencion
-)
-
+from dataclasses import dataclass
 from django.utils import timezone
+from information_app.models import (
+    Asignacion, Solicitud, Tecnico,
+    HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion
+)
+from information_app.repositories.repository_utils import BaseRepository
 
-ESTADOS_VALIDOS = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
-ESTADOS_CIERRE  = {'completada', 'cancelada'}
 
+ESTADOS_CIERRE = {'completada', 'cancelada'}
 
-class RequestRepository:
+class RequestRepository(BaseRepository):
 
-    def get_by_id(self, request_id: int):
-        return Solicitud.objects.filter(id=request_id).first()
+    def get_model(self):
+        return Solicitud
 
-    def get_technicians_by_ids(self, technician_ids: list[int]):
+    # ── Query operations ─────────────────────────────────────────────────────────
+
+    def get_technicians_by_ids(self, technician_ids):
         return list(
             Tecnico.objects
             .select_related('usuario')
             .filter(usuario_id__in=technician_ids)
         )
 
-    def replace_assigned_technicians(self, request: Solicitud, technicians: list[Tecnico]):
-        Asignacion.objects.filter(solicitud=request).update(activa=False)
+    def get_lab_schedules(self, laboratorio: str):
+        return (
+            HorarioAtencion.objects
+            .filter(laboratorio=laboratorio, disponible=True)
+            .order_by('dia', 'hora_inicio')
+        )
 
+    def get_laboratories(self):
+        return (
+            HorarioAtencion.objects
+            .values_list('laboratorio', flat=True)
+            .distinct()
+            .order_by('laboratorio')
+        )
+
+    # ── Escritura ─────────────────────────────────────────────────────────
+
+    def replace_assigned_technicians(self, request: Solicitud, technicians):
+        Asignacion.objects.filter(solicitud=request).update(activa=False)
         assignments = []
         for technician in technicians:
             assignment, _ = Asignacion.objects.update_or_create(
@@ -37,31 +50,9 @@ class RequestRepository:
                 defaults={'activa': True},
             )
             assignments.append(assignment)
-
         return assignments
-    # ── Consultas ──────────────────────────────────────────────────────────────
-
-    def get_lab_schedules(self, laboratorio: str):
-        # RF_34
-        return (
-            HorarioAtencion.objects
-            .filter(laboratorio=laboratorio, disponible=True)
-            .order_by('dia', 'hora_inicio')
-        )
-
-    def get_laboratories(self):
-        # RF_34
-        return (
-            HorarioAtencion.objects
-            .values_list('laboratorio', flat=True)
-            .distinct()
-            .order_by('laboratorio')
-        )
-
-    # ── Escritura ──────────────────────────────────────────────────────────────
 
     def approve(self, solicitud: Solicitud, usuario) -> Solicitud:
-        # RF_35: cambia estado a 'en_proceso' y registra historial automáticamente
         estado_anterior = solicitud.estado
         solicitud.estado = 'en_proceso'
         solicitud.save()
@@ -74,9 +65,9 @@ class RequestRepository:
         )
         return solicitud
 
-    def change_status(self, solicitud: Solicitud, nuevo_estado: str, motivo: str, usuario) -> Solicitud:
-        # RF_37: cambio manual con motivo obligatorio
-        # RF_51: si el estado es de cierre, guarda fecha_cierre
+    def change_status(
+        self, solicitud: Solicitud, nuevo_estado: str, motivo: str, usuario
+    ) -> Solicitud:
         estado_anterior = solicitud.estado
         solicitud.estado = nuevo_estado
         if nuevo_estado in ESTADOS_CIERRE:
@@ -91,19 +82,26 @@ class RequestRepository:
         )
         return solicitud
 
-    def create_attachment(self, solicitud: Solicitud, archivo, tipo: str, nombre: str,
-                      tamanio: int, descripcion: str, usuario) -> Adjunto:
-        # RF_38: asocia archivo a la solicitud; fecha_carga se registra sola (auto_now_add)
+    def create_attachment(
+        self, solicitud: Solicitud, attachment: AttachmentData, usuario
+    ) -> Adjunto:
         anexo = Anexo.objects.create(
             solicitud=solicitud,
             responsable=usuario,
-            descripcion=descripcion,
+            descripcion=attachment.descripcion,
         )
-        adjunto = Adjunto.objects.create(
+        return Adjunto.objects.create(
             anexo=anexo,
-            archivo=archivo,
-            tipo=tipo,
-            nombre_archivo=nombre,
-            tamanio_bytes=tamanio,
+            archivo=attachment.archivo,
+            tipo=attachment.tipo,
+            nombre_archivo=attachment.nombre,
+            tamanio_bytes=attachment.tamanio,
         )
-        return adjunto
+
+@dataclass
+class AttachmentData:
+    archivo: object
+    tipo: str
+    nombre: str
+    tamanio: int
+    descripcion: str

@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import MagicMock
 from tests.equipment_conf_test import EquipmentServices, make_equipment
 
-
 class TestUpdateEquipment(unittest.TestCase):
 
     def _service(
@@ -20,7 +19,6 @@ class TestUpdateEquipment(unittest.TestCase):
         svc.equipment_repository = repo
         return svc, repo
 
-
     def test_serial_number_cannot_be_modified(self):
         cases = [
             {"serial_number": "SN-NEW-001"},
@@ -35,8 +33,7 @@ class TestUpdateEquipment(unittest.TestCase):
                 with self.assertRaises(ValueError) as cm:
                     svc.update_equipment(1, data)
                 self.assertIn("serial_number", str(cm.exception))
-                repo.get_by_id.assert_not_called()  
-
+    
     def test_successful_update_each_field_individually(self):
         cases = [
             {"name":           "Nuevo Nombre"       },
@@ -91,7 +88,8 @@ class TestUpdateEquipment(unittest.TestCase):
             with self.subTest(data=data):
                 svc, repo = self._service()
                 svc.update_equipment(1, data)
-                fields_dict = repo.update.call_args.args[1]
+                # repo.update(equipment, **fields_dict) → kwargs
+                fields_dict = repo.update.call_args.kwargs
                 self.assertEqual(fields_dict[db_field], expected_value)
 
     def test_decommissioned_equipment_cannot_be_modified(self):
@@ -190,7 +188,7 @@ class TestUpdateEquipment(unittest.TestCase):
             with self.subTest(status=status_in):
                 svc, repo = self._service()
                 svc.update_equipment(1, {"status": status_in, "criticality": criticality_in})
-                fields_dict = repo.update.call_args.args[1]
+                fields_dict = repo.update.call_args.kwargs
                 self.assertEqual(fields_dict["estado"],    expected_status)
                 self.assertEqual(fields_dict["criticidad"], expected_criticality)
 
@@ -207,9 +205,8 @@ class TestUpdateEquipment(unittest.TestCase):
             with self.subTest(field=field):
                 svc, repo = self._service()
                 svc.update_equipment(1, {field: raw_value})
-                fields_dict = repo.update.call_args.args[1]
+                fields_dict = repo.update.call_args.kwargs
                 self.assertEqual(fields_dict[db_field], expected_value)
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

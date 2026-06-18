@@ -1,271 +1,140 @@
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
 from information_app.services.request_services import RequestServices
-from information_app.services.user_services import UserServices
+from information_app.controllers.controller_utils import (
+    handle_exceptions,
+    require_field,
+    ValidationError,
+    BaseAPIView,
+)
 
-
-
-class RequestTechnicianReassignmentView(APIView):
-    authentication_classes = []
-    permission_classes = []
-
+class RequestTechnicianReassignmentView(BaseAPIView):
+    @handle_exceptions
     def patch(self, request, request_id):
-        user_service = UserServices()
+        self.get_lab_technician(request)
+        result = RequestServices().reassign_technicians(request_id, self.get_json_data(request))
+        return Response(
+            {'message': 'Technicians reassigned successfully.', 'assignment': result},
+            status=status.HTTP_200_OK,
+        )
 
-        try:
-            logged_user = user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        if not user_service.is_lab_technician(logged_user):
-            return Response(
-                {'error': 'Only lab technicians can reassign technicians.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        try:
-            data = request.data
-            if not isinstance(data, dict):
-                raise ValueError
-        except Exception:
-            return Response(
-                {
-                    'error': 'The request body must be a valid JSON object. '
-                             'Make sure to include the header Content-Type: application/json'
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        service = RequestServices()
-
-        try:
-            result = service.reassign_technicians(request_id, data)
-            return Response(
-                {
-                    'message': 'Technicians reassigned successfully.',
-                    'assignment': result,
-                },
-                status=status.HTTP_200_OK,
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response(
-                {'error': 'Internal error. Please contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-
-# =============================================================================
-# RF_35 — Aprobar solicitud → estado "En proceso" automático
-# PATCH /api/solicitudes/<solicitud_id>/aprobar/
-# =============================================================================
-
-class RequestApproveView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
+class RequestApproveView(BaseAPIView):
+    @handle_exceptions
     def patch(self, request, solicitud_id):
-        service = UserServices()
-        try:
-            usuario = service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-        if not UserServices.is_lab_technician(usuario):
-            return Response({'error': 'Solo el laboratorista puede aprobar solicitudes.'}, status=status.HTTP_403_FORBIDDEN)
+        usuario = self.get_lab_technician(request)
+        solicitud = RequestServices().approve_request(solicitud_id, usuario)
+        return Response(
+            {
+                'message': 'Solicitud aprobada. Estado actualizado a En proceso.',
+                'solicitud': solicitud
+            },
+            status=status.HTTP_200_OK,
+        )
 
-        try:
-            solicitud = RequestServices().approve_request(solicitud_id, usuario)
-            return Response({'message': 'Solicitud aprobada. Estado actualizado a En proceso.', 'solicitud': solicitud}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-# =============================================================================
-# RF_34 — Consultar horario del laboratorio al revisar una solicitud
-# GET /api/solicitudes/horario/?laboratorio=<nombre>
-# GET /api/solicitudes/horario/   → devuelve lista de laboratorios
-# =============================================================================
-
-class LabScheduleView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
+class LabScheduleView(BaseAPIView):
+    @handle_exceptions
     def get(self, request):
-        user_service = UserServices()
-        try:
-            user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
+        self.get_user(request)
         laboratorio = request.query_params.get('laboratorio', '').strip()
         srv = RequestServices()
-        try:
-            if not laboratorio:
-                laboratorios = srv.get_available_laboratories()
-                return Response({'laboratorios': laboratorios}, status=status.HTTP_200_OK)
-            horarios = srv.get_lab_schedule(laboratorio)
-            return Response({'laboratorio': laboratorio, 'horarios': horarios}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-# =============================================================================
-# RF_37 — Cambio manual de estado con motivo obligatorio
-# PATCH /api/solicitudes/<solicitud_id>/estado/
-# Body JSON: { "estado": "completada", "motivo": "Reparación finalizada." }
-# =============================================================================
-
-class RequestStatusView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
-    def patch(self, request, solicitud_id):
-        user_service = UserServices()
-        try:
-            usuario = user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        nuevo_estado = request.data.get('estado', '').strip()
-        motivo       = request.data.get('motivo', '').strip()
-
-        if not nuevo_estado:
-            return Response({'error': "El campo 'estado' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
-        if not motivo:
-            return Response({'error': "El campo 'motivo' es obligatorio al cambiar el estado manualmente."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            solicitud = RequestServices().change_status_manually(solicitud_id, nuevo_estado, motivo, usuario)
-            return Response({'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-# =============================================================================
-# RF_38 — Subir archivos adjuntos a una solicitud
-# POST /api/solicitudes/<solicitud_id>/adjuntos/
-# Body multipart/form-data: archivo (file), tipo, nombre_archivo, descripcion
-# =============================================================================
-
-class RequestAttachmentView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
-    def post(self, request, solicitud_id):
-        user_service = UserServices()
-        try:
-            usuario = user_service.extract_user_from_token(request)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        archivo     = request.FILES.get('archivo')
-        tipo        = request.data.get('tipo', 'otro')
-        nombre      = request.data.get('nombre_archivo', '')
-        descripcion = request.data.get('descripcion', '')
-
-        if not archivo:
-            return Response({'error': "El campo 'archivo' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
-        if not nombre:
-            nombre = archivo.name
-
-        try:
-            adjunto = RequestServices().upload_attachment(
-                solicitud_id=solicitud_id, archivo=archivo, tipo=tipo,
-                nombre=nombre, tamanio=archivo.size,
-                descripcion=descripcion, usuario=usuario,
+        if not laboratorio:
+            return Response(
+                {'laboratorios': srv.get_available_laboratories()},
+                status=status.HTTP_200_OK
             )
-            return Response({'message': 'Archivo adjunto cargado correctamente.', 'adjunto': adjunto}, status=status.HTTP_201_CREATED)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {'laboratorio': laboratorio, 'horarios': srv.get_lab_schedule(laboratorio)},
+            status=status.HTTP_200_OK,
+        )
 
-
-#################### DEBUG ####################
-
-class RequestApproveDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
+class RequestStatusView(BaseAPIView):
+    @handle_exceptions
     def patch(self, request, solicitud_id):
-        try:
-            solicitud = RequestServices().approve_request(solicitud_id, usuario=None)
-            return Response({'message': 'Solicitud aprobada.', 'solicitud': solicitud}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        usuario = self.get_user(request)
+        data = {
+            'estado': require_field(request.data, 'estado').strip(),
+            'motivo': require_field(request.data, 'motivo').strip(),
+        }
+        solicitud = RequestServices().change_status_manually(solicitud_id, data, usuario)
+        return Response(
+            {'message': f"Estado actualizado a '{data['estado']}'.", 'solicitud': solicitud},
+            status=status.HTTP_200_OK,
+        )
 
-
-class RequestStatusDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
-    def patch(self, request, solicitud_id):
-        nuevo_estado = request.data.get('estado', '').strip()
-        motivo       = request.data.get('motivo', '').strip()
-        if not nuevo_estado:
-            return Response({'error': "El campo 'estado' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
-        if not motivo:
-            return Response({'error': "El campo 'motivo' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            solicitud = RequestServices().change_status_manually(solicitud_id, nuevo_estado, motivo, usuario=None)
-            return Response({'message': f"Estado actualizado a '{nuevo_estado}'.", 'solicitud': solicitud}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class RequestAttachmentDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
-
+class RequestAttachmentView(BaseAPIView):
+    @handle_exceptions
     def post(self, request, solicitud_id):
-        archivo     = request.FILES.get('archivo')
-        tipo        = request.data.get('tipo', 'otro')
-        nombre      = request.data.get('nombre_archivo', '')
-        descripcion = request.data.get('descripcion', '')
+        usuario = self.get_user(request)
+        archivo = request.FILES.get('archivo')
         if not archivo:
-            return Response({'error': "El campo 'archivo' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
-        if not nombre:
-            nombre = archivo.name
-        try:
-            adjunto = RequestServices().upload_attachment(
-                solicitud_id=solicitud_id, archivo=archivo, tipo=tipo,
-                nombre=nombre, tamanio=archivo.size,
-                descripcion=descripcion, usuario=None,
-            )
-            return Response({'message': 'Archivo adjunto cargado correctamente.', 'adjunto': adjunto}, status=status.HTTP_201_CREATED)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise ValidationError("El campo 'archivo' es obligatorio.")
+        adjunto = RequestServices().upload_attachment(
+            solicitud_id=solicitud_id,
+            data={
+                'archivo':     archivo,
+                'tipo':        request.data.get('tipo', 'otro'),
+                'nombre':      request.data.get('nombre_archivo', '') or archivo.name,
+                'tamanio':     archivo.size,
+                'descripcion': request.data.get('descripcion', ''),
+            },
+            usuario=usuario,
+        )
+        return Response(
+            {'message': 'Archivo adjunto cargado correctamente.', 'adjunto': adjunto},
+            status=status.HTTP_201_CREATED,
+        )
 
+# ── Debug endpoints ─────────────────────────────────────────────────────────
 
-class LabScheduleDebugView(APIView):
-    authentication_classes = []
-    permission_classes     = []
+class RequestApproveDebugView(RequestApproveView):
+    skip_auth = True
 
-    def get(self, request):
-        laboratorio = request.query_params.get('laboratorio', '').strip()
-        srv = RequestServices()
-        try:
-            if not laboratorio:
-                return Response({'laboratorios': srv.get_available_laboratories()}, status=status.HTTP_200_OK)
-            horarios = srv.get_lab_schedule(laboratorio)
-            return Response({'laboratorio': laboratorio, 'horarios': horarios}, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({'error': 'Error interno. Contacte al soporte.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    @handle_exceptions
+    def patch(self, request, solicitud_id):
+        solicitud = RequestServices().approve_request(solicitud_id, usuario=None)
+        return Response(
+            {'message': 'Solicitud aprobada.', 'solicitud': solicitud},
+            status=status.HTTP_200_OK,
+        )
+
+class RequestStatusDebugView(RequestStatusView):
+    skip_auth = True
+
+    @handle_exceptions
+    def patch(self, request, solicitud_id):
+        data = {
+            'estado': require_field(request.data, 'estado').strip(),
+            'motivo': require_field(request.data, 'motivo').strip(),
+        }
+        solicitud = RequestServices().change_status_manually(solicitud_id, data, usuario=None)
+        return Response(
+            {'message': f"Estado actualizado a '{data['estado']}'.", 'solicitud': solicitud},
+            status=status.HTTP_200_OK,
+        )
+
+class RequestAttachmentDebugView(RequestAttachmentView):
+    skip_auth = True
+
+    @handle_exceptions
+    def post(self, request, solicitud_id):
+        archivo = request.FILES.get('archivo')
+        if not archivo:
+            raise ValidationError("El campo 'archivo' es obligatorio.")
+        adjunto = RequestServices().upload_attachment(
+            solicitud_id=solicitud_id,
+            data={
+                'archivo':     archivo,
+                'tipo':        request.data.get('tipo', 'otro'),
+                'nombre':      request.data.get('nombre_archivo', '') or archivo.name,
+                'tamanio':     archivo.size,
+                'descripcion': request.data.get('descripcion', ''),
+            },
+            usuario=None,
+        )
+        return Response(
+            {'message': 'Archivo adjunto cargado correctamente.', 'adjunto': adjunto},
+            status=status.HTTP_201_CREATED,
+        )
+
+class LabScheduleDebugView(LabScheduleView):
+    skip_auth = True

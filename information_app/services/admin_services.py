@@ -1,4 +1,4 @@
-from ..repositories.admin_repository import AdminRepository
+from information_app.repositories.admin_repository import AdminRepository
 
 UMBRAL_DIAS_DEFAULT = 30
 
@@ -7,33 +7,34 @@ class AdminServices:
     def __init__(self):
         self.repo = AdminRepository()
 
-    # ── RF_47: Historial de notificaciones ────────────────────────────────────
+    # ── RF_47: Historial de notificaciones ─────────────────────────────────
 
     def get_notification_history(self) -> list:
         return [self._format_notification(n) for n in self.repo.get_notification_history()]
 
-    # ── RF_50: Reporte de fallas ──────────────────────────────────────────────
+    # ── RF_50: Reporte de fallas ───────────────────────────────────────────
 
     def get_failure_report(self) -> list:
         return [self._format_failure(e) for e in self.repo.get_failure_report()]
 
-    # ── RF_51: Reporte de tiempos de reparación ───────────────────────────────
+    # ── RF_51: Reporte de tiempos de reparación ────────────────────────────
 
     def get_repair_time_report(self) -> list:
         return [self._format_repair_time(e) for e in self.repo.get_repair_time_report()]
 
-    # ── RF_52: Reporte de equipos fuera de servicio ───────────────────────────
+    # ── RF_52: Equipos fuera de servicio ────────────────────────────────────
 
     def get_out_of_service_equipment_report(self, umbral_dias) -> dict:
         try:
             umbral = int(umbral_dias)
             if umbral < 0:
                 raise ValueError()
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exc:
             raise ValueError(
                 f"El parámetro 'umbral_dias' debe ser un número entero positivo. "
                 f"Valor recibido: '{umbral_dias}'."
-            )
+            ) from exc
+
         equipos = self.repo.get_out_of_service_equipment(umbral)
         return {
             'umbral_dias': umbral,
@@ -41,12 +42,12 @@ class AdminServices:
             'equipos':     [self._format_out_of_service(e) for e in equipos],
         }
 
-    # ── RF_53: Equipos activos ────────────────────────────────────────────────
+    # ── RF_53: Equipos activos ──────────────────────────────────────────────
 
     def get_active_equipment(self) -> list:
         return [self._format_active_equipment(e) for e in self.repo.get_active_equipment()]
 
-    # ── Formatters ─────────────────────────────────────────────────────────────
+    # ── Formatters ──────────────────────────────────────────────────────────
 
     @staticmethod
     def _format_notification(n) -> dict:
