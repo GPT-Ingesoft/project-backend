@@ -1,12 +1,16 @@
 import unittest
 from unittest.mock import MagicMock
-from tests.equipment_conf_test import EquipmentServices, make_equipment
+from tests.equipment_conf_test import (
+    EquipmentServices,
+    format_equipment_data,
+    validate_required_fields,
+    make_equipment,
+)
 
 class TestValidateEquipmentData(unittest.TestCase):
 
     def test_validate_equipment_data(self):
         fields = {"name", "inventory_code", "model", "brand", "serial_number", "location"}
-
         cases = [
             # ── valid fields ──────────────────────────────────────────────────
             (
@@ -65,11 +69,11 @@ class TestValidateEquipmentData(unittest.TestCase):
             with self.subTest(data=data):
                 if raises:
                     with self.assertRaises(ValueError) as cm:
-                        EquipmentServices.validate_equipment_data(data, fields)
+                        validate_required_fields(data, fields)
                     if match:
                         self.assertIn(match, str(cm.exception))
                 else:
-                    EquipmentServices.validate_equipment_data(data, fields)
+                    validate_required_fields(data, fields)
 
 class TestRegisterEquipment(unittest.TestCase):
 
@@ -104,7 +108,7 @@ class TestRegisterEquipment(unittest.TestCase):
             (self._base_data(criticality="alta"),                              "operativo",           "alta"   ),
             (self._base_data(criticality="baja"),                              "operativo",           "baja"   ),
             (self._base_data(status="en_mantenimiento", criticality="alta"),   "en_mantenimiento",    "alta"   ),
-            (self._base_data(status="fuera_de_servicio", criticality="baja"),  "fuera_de_servicio",   "baja"   ),
+            (self._base_data(status="fuera_de_servicio", criticality="baja"),   "fuera_de_servicio",   "baja"   ),
         ]
 
         for data, expected_status, expected_criticality in cases:
@@ -166,24 +170,24 @@ class TestRegisterEquipment(unittest.TestCase):
                 data = self._base_data(status=status_in, criticality=criticality_in)
                 svc.register_equipment(data)
                 call_kwargs = repo.create.call_args.kwargs
-                self.assertEqual(call_kwargs["status"],      expected_status)
-                self.assertEqual(call_kwargs["criticality"], expected_criticality)
+                self.assertEqual(call_kwargs["estado"],      expected_status)
+                self.assertEqual(call_kwargs["criticidad"], expected_criticality)
 
     def test_string_fields_stripped(self):
         cases = [
-            ("name",               "  Microscopio  ", "Microscopio"  ),
-            ("inventory_code",     "  INV-001  ",     "INV-001"      ),
-            ("serial_number",      "  SN-001  ",      "SN-001"       ),
-            ("location",           "  Lab 301  ",     "Lab 301"      ),
+            ("name",               "  Microscopio  ", "nombre",    "Microscopio"  ),
+            ("inventory_code",     "  INV-001  ",     "codigo_inventario", "INV-001"      ),
+            ("serial_number",      "  SN-001  ",      "numero_serie",    "SN-001"       ),
+            ("location",           "  Lab 301  ",     "ubicacion",       "Lab 301"      ),
         ]
 
-        for field, raw_value, expected_value in cases:
+        for field, raw_value, db_field, expected_value in cases:
             with self.subTest(field=field):
                 svc, repo = self._service()
                 data = self._base_data(**{field: raw_value})
                 svc.register_equipment(data)
                 call_kwargs = repo.create.call_args.kwargs
-                self.assertEqual(call_kwargs[field], expected_value)
+                self.assertEqual(call_kwargs[db_field], expected_value)
 
 class TestFormatEquipmentData(unittest.TestCase):
 
@@ -201,7 +205,7 @@ class TestFormatEquipmentData(unittest.TestCase):
                     marca=marca, numero_serie=serie, ubicacion=ubicacion,
                     estado=estado, criticidad=criticidad,
                 )
-                result = EquipmentServices.format_equipment_data(equipment)
+                result = format_equipment_data(equipment)
 
                 self.assertEqual(result["name"],           nombre     )
                 self.assertEqual(result["inventory_code"], codigo     )

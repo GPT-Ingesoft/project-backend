@@ -4,19 +4,17 @@ import sys
 import types
 import unittest
 from datetime import datetime, timezone
+from dataclasses import dataclass
 from unittest.mock import MagicMock
-
 
 def create_modules(*names):
     for name in names:
         sys.modules.setdefault(name, types.ModuleType(name))
 
-
 class _Transaction:
     @staticmethod
     def atomic(fn):
         return fn
-
 
 create_modules(
     "django",
@@ -24,10 +22,22 @@ create_modules(
     "information_app",
     "information_app.repositories",
     "information_app.repositories.request_repository",
+    "information_app.services",
+    "information_app.services.services_utils",
 )
 
 sys.modules["django.db"].transaction = _Transaction
 sys.modules["information_app.repositories.request_repository"].RequestRepository = MagicMock
+
+@dataclass
+class _AttachmentData:
+    archivo: object = None
+    tipo: str = "otro"
+    nombre: str = ""
+    tamanio: int = 0
+    descripcion: str = ""
+
+sys.modules["information_app.repositories.request_repository"].AttachmentData = _AttachmentData
 
 service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "request_services.py"
 
@@ -42,7 +52,6 @@ sys.modules["information_app.services.request_services"] = module
 spec.loader.exec_module(module)
 RequestServices = module.RequestServices
 
-
 def make_request(status="pendiente"):
     request = MagicMock()
     request.id = 1
@@ -50,7 +59,6 @@ def make_request(status="pendiente"):
     request.descripcion = "The microscope does not turn on."
     request.fecha_creacion = datetime(2024, 1, 1, tzinfo=timezone.utc)
     return request
-
 
 def make_technician(user_id=10):
     user = MagicMock()
@@ -63,7 +71,6 @@ def make_technician(user_id=10):
     technician.especialidad = "Electronics"
     technician.contacto = "555-0000"
     return technician
-
 
 class TestRequestReassignmentAllowed(unittest.TestCase):
 
@@ -110,7 +117,6 @@ class TestRequestReassignmentAllowed(unittest.TestCase):
         self.assertEqual(result["request"]["description"], "The microscope does not turn on.")
         self.assertEqual(result["assigned_technicians"][0]["name"], "Technician 10")
         self.assertEqual(result["assigned_technicians"][1]["email"], "tech20@test.com")
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

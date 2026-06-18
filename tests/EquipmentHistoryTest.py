@@ -3,37 +3,50 @@ import unittest
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
-
 def create_modules(*names):
     for name in names:
         sys.modules.setdefault(name, types.ModuleType(name))
 
+class _Transaction:
+    @staticmethod
+    def atomic(fn):
+        return fn
 
 create_modules(
+    "django",
+    "django.db",
     "information_app",
     "information_app.services",
+    "information_app.services.services_utils",
     "information_app.repositories",
-    "information_app.repositories.EquipmentRepository",
-    "repositories",
-    "repositories.equipment_repository",
+    "information_app.repositories.equipment_repository",
 )
 
-sys.modules["information_app.repositories.EquipmentRepository"].EquipmentRepository = MagicMock
-sys.modules["repositories.equipment_repository"].EquipmentRepository = MagicMock
+sys.modules["django.db"].transaction = _Transaction
+sys.modules["information_app.repositories.equipment_repository"].EquipmentRepository = MagicMock
+services_utils_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "services_utils.py"
+spec_utils = importlib.util.spec_from_file_location(
+    "information_app.services.services_utils",
+    services_utils_path,
+)
+module_utils = importlib.util.module_from_spec(spec_utils)
+module_utils.__package__ = "information_app.services"
+sys.modules["information_app.services.services_utils"] = module_utils
+spec_utils.loader.exec_module(module_utils)
+format_technician_data = module_utils.format_technician_data
 
-service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "EquipmentServices.py"
+service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "equipment_services.py"
 
 spec = importlib.util.spec_from_file_location(
-    "information_app.services.EquipmentServices",
+    "information_app.services.equipment_services",
     service_path
 )
 
 module = importlib.util.module_from_spec(spec)
 module.__package__ = "information_app.services"
-sys.modules["information_app.services.EquipmentServices"] = module
+sys.modules["information_app.services.equipment_services"] = module
 spec.loader.exec_module(module)
 EquipmentServices = module.EquipmentServices
-
 
 def make_equipment():
     equipment = MagicMock()
@@ -51,7 +64,6 @@ def make_equipment():
     equipment.fecha_creacion = datetime(2024, 1, 1, tzinfo=timezone.utc)
     return equipment
 
-
 def make_technician():
     user = MagicMock()
     user.id = 2
@@ -64,7 +76,6 @@ def make_technician():
     technician.contacto = "3001234567"
     return technician
 
-
 def make_intervention():
     intervention = MagicMock()
     intervention.id = 1
@@ -73,7 +84,6 @@ def make_intervention():
     intervention.fecha_intervencion = datetime(2024, 1, 2, tzinfo=timezone.utc)
     intervention.tecnico = make_technician()
     return intervention
-
 
 def make_request():
     request = MagicMock()
@@ -101,7 +111,6 @@ def make_request():
 
     return request
 
-
 class TestEquipmentHistory(unittest.TestCase):
 
     def _service(self, equipment):
@@ -116,7 +125,6 @@ class TestEquipmentHistory(unittest.TestCase):
     def test_get_equipment_history_successfully(self):
         equipment = make_equipment()
         equipment.solicitudes.all.return_value = [make_request()]
-
         service, repo = self._service(equipment)
 
         result = service.get_equipment_history(1)
@@ -126,7 +134,6 @@ class TestEquipmentHistory(unittest.TestCase):
 
         self.assertEqual(result["equipment"]["id"], 1)
         self.assertEqual(len(result["maintenance_requests"]), 1)
-
         repo.get_equipment_with_history.assert_called_once_with(1)
 
     def test_equipment_history_includes_request_status(self):
@@ -164,7 +171,6 @@ class TestEquipmentHistory(unittest.TestCase):
 
         self.assertIn("Equipment not found", str(cm.exception))
         repo.get_equipment_with_history.assert_called_once_with(999)
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

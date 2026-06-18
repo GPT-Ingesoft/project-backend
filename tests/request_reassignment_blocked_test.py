@@ -3,19 +3,17 @@ import pathlib
 import sys
 import types
 import unittest
+from dataclasses import dataclass
 from unittest.mock import MagicMock
-
 
 def create_modules(*names):
     for name in names:
         sys.modules.setdefault(name, types.ModuleType(name))
 
-
 class _Transaction:
     @staticmethod
     def atomic(fn):
         return fn
-
 
 create_modules(
     "django",
@@ -23,10 +21,22 @@ create_modules(
     "information_app",
     "information_app.repositories",
     "information_app.repositories.request_repository",
+    "information_app.services",
+    "information_app.services.services_utils",
 )
 
 sys.modules["django.db"].transaction = _Transaction
 sys.modules["information_app.repositories.request_repository"].RequestRepository = MagicMock
+
+@dataclass
+class _AttachmentData:
+    archivo: object = None
+    tipo: str = "otro"
+    nombre: str = ""
+    tamanio: int = 0
+    descripcion: str = ""
+
+sys.modules["information_app.repositories.request_repository"].AttachmentData = _AttachmentData
 
 service_path = pathlib.Path(__file__).resolve().parent.parent / "information_app" / "services" / "request_services.py"
 
@@ -41,14 +51,12 @@ sys.modules["information_app.services.request_services"] = module
 spec.loader.exec_module(module)
 RequestServices = module.RequestServices
 
-
 def make_request(status):
     request = MagicMock()
     request.id = 1
     request.estado = status
     request.descripcion = "The equipment is already resolved."
     return request
-
 
 class TestRequestReassignmentBlocked(unittest.TestCase):
 
@@ -91,7 +99,6 @@ class TestRequestReassignmentBlocked(unittest.TestCase):
         self.assertIn("Technicians can only be reassigned", str(cm.exception))
         repo.get_technicians_by_ids.assert_not_called()
         repo.replace_assigned_technicians.assert_not_called()
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

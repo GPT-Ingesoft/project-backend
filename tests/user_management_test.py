@@ -2,14 +2,12 @@ import unittest
 from unittest.mock import MagicMock
 from tests.user_conf_test import UserServices, make_user
 
-
 class TestAssignRole(unittest.TestCase):
-    """RF_19 - Assign a role to a user."""
 
     def _service(self, user=None, found=True):
         repo = MagicMock()
         repo.get_by_id.return_value = user if found else None
-        repo.update_role.return_value = user
+        repo.update.return_value = user
         svc = UserServices()
         svc.user_repository = repo
         return svc, repo
@@ -29,7 +27,9 @@ class TestAssignRole(unittest.TestCase):
                 result = svc.assign_role(user_id=1, role=new_role)
 
                 self.assertEqual(result["role"], new_role)
-                repo.update_role.assert_called_once_with(user, new_role)
+                repo.update.assert_called_once()
+                call_kwargs = repo.update.call_args.kwargs
+                self.assertEqual(call_kwargs["rol"], new_role)
 
     def test_invalid_role(self):
         invalid_roles = ["admin", "superadmin", "", "Docente"]
@@ -41,7 +41,7 @@ class TestAssignRole(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     svc.assign_role(user_id=1, role=role)
 
-                repo.update_role.assert_not_called()
+                repo.update.assert_not_called()
 
     def test_user_not_found(self):
         svc, repo = self._service(found=False)
@@ -50,16 +50,14 @@ class TestAssignRole(unittest.TestCase):
             svc.assign_role(user_id=999, role="docente")
 
         self.assertIn("not found", str(cm.exception))
-        repo.update_role.assert_not_called()
-
+        repo.update.assert_not_called()
 
 class TestChangeStatus(unittest.TestCase):
-    """RF_20 - Activate or deactivate a user account."""
 
     def _service(self, user=None, found=True):
         repo = MagicMock()
         repo.get_by_id.return_value = user if found else None
-        repo.update_status.return_value = user
+        repo.update.return_value = user
         svc = UserServices()
         svc.user_repository = repo
         return svc, repo
@@ -72,7 +70,9 @@ class TestChangeStatus(unittest.TestCase):
         result = svc.change_status(user_id=1, active=False)
 
         self.assertFalse(result["active"])
-        repo.update_status.assert_called_once_with(user, False)
+        repo.update.assert_called_once()
+        call_kwargs = repo.update.call_args.kwargs
+        self.assertEqual(call_kwargs["activo"], False)
 
     def test_activate_account(self):
         user = make_user()
@@ -82,7 +82,9 @@ class TestChangeStatus(unittest.TestCase):
         result = svc.change_status(user_id=1, active=True)
 
         self.assertTrue(result["active"])
-        repo.update_status.assert_called_once_with(user, True)
+        repo.update.assert_called_once()
+        call_kwargs = repo.update.call_args.kwargs
+        self.assertEqual(call_kwargs["activo"], True)
 
     def test_user_not_found(self):
         svc, repo = self._service(found=False)
@@ -91,11 +93,9 @@ class TestChangeStatus(unittest.TestCase):
             svc.change_status(user_id=999, active=False)
 
         self.assertIn("not found", str(cm.exception))
-        repo.update_status.assert_not_called()
-
+        repo.update.assert_not_called()
 
 class TestVerifyAccess(unittest.TestCase):
-    """RF_21 - Block access for deactivated or external accounts."""
 
     def _service(self, user=None, found=True):
         repo = MagicMock()
@@ -131,7 +131,6 @@ class TestVerifyAccess(unittest.TestCase):
             svc.verify_access(user_id=999)
 
         self.assertIn("not found", str(cm.exception))
-
 
 if __name__ == "__main__":
     unittest.main()
