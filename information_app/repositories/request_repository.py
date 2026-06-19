@@ -1,13 +1,22 @@
 from dataclasses import dataclass
 from django.utils import timezone
 from information_app.models import (
-    Asignacion, Solicitud, Tecnico,
+    Asignacion, Equipo, Solicitud, Tecnico,
     HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion
 )
 from information_app.repositories.repository_utils import BaseRepository
 
 
 ESTADOS_CIERRE = {'completada', 'cancelada'}
+
+@dataclass
+class AttachmentData:
+    archivo: object
+    tipo: str
+    nombre: str
+    tamanio: int
+    descripcion: str
+
 
 class RequestRepository(BaseRepository):
 
@@ -22,6 +31,23 @@ class RequestRepository(BaseRepository):
             .select_related('usuario')
             .filter(usuario_id__in=technician_ids)
         )
+
+    def get_available_technicians(self, solicitud: Solicitud):
+        technicians = Tecnico.objects.select_related('usuario').filter(usuario__activo=True)
+        if not solicitud.horario_agendado_id:
+            return technicians.order_by('usuario__nombre')
+
+        occupied_ids = (
+            Asignacion.objects
+            .filter(
+                activa=True,
+                solicitud__estado__in=('pendiente', 'en_proceso'),
+                solicitud__horario_agendado_id=solicitud.horario_agendado_id,
+            )
+            .exclude(solicitud=solicitud)
+            .values_list('tecnico_id', flat=True)
+        )
+        return technicians.exclude(usuario_id__in=occupied_ids).order_by('usuario__nombre')
 
     def get_lab_schedules(self, laboratorio: str):
         return (
@@ -38,7 +64,39 @@ class RequestRepository(BaseRepository):
             .order_by('laboratorio')
         )
 
+    def get_schedule_by_id(self, schedule_id: int):
+        return HorarioAtencion.objects.filter(id=schedule_id).first()
+
+    def get_equipment_by_id(self, equipment_id: int):
+        return Equipo.objects.filter(id=equipment_id).first()
+
+    @staticmethod
+    def is_user_assigned(solicitud: Solicitud, user_id: int) -> bool:
+        return Asignacion.objects.filter(
+            solicitud=solicitud,
+            tecnico__usuario_id=user_id,
+            activa=True,
+        ).exists()
+
     # ── Escritura ─────────────────────────────────────────────────────────
+
+    def create_request(  # pylint: disable=too-many-arguments
+        self,
+        *,
+        descripcion: str,
+        prioridad: str,
+        usuario,
+        equipo,
+        horario_agendado=None,
+    ) -> Solicitud:
+        return Solicitud.objects.create(
+            descripcion=descripcion,
+            prioridad=prioridad,
+            estado='pendiente',
+            usuario=usuario,
+            equipo=equipo,
+            horario_agendado=horario_agendado,
+        )
 
     def replace_assigned_technicians(self, request: Solicitud, technicians):
         Asignacion.objects.filter(solicitud=request).update(activa=False)
@@ -97,11 +155,3 @@ class RequestRepository(BaseRepository):
             nombre_archivo=attachment.nombre,
             tamanio_bytes=attachment.tamanio,
         )
-
-@dataclass
-class AttachmentData:
-    archivo: object
-    tipo: str
-    nombre: str
-    tamanio: int
-    descripcion: str

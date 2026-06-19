@@ -18,6 +18,40 @@ class RequestTechnicianReassignmentView(BaseAPIView):
             status=status.HTTP_200_OK,
         )
 
+
+class RequestCreateView(BaseAPIView):
+    @handle_exceptions
+    def post(self, request):
+        usuario = self.get_user(request)
+        result = RequestServices().create_request(
+            self.get_json_data(request),
+            usuario,
+        )
+        return Response(
+            {'message': 'Solicitud creada correctamente.', 'solicitud': result},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class RequestDetailView(BaseAPIView):
+    @handle_exceptions
+    def get(self, request, solicitud_id):
+        usuario = self.get_user(request)
+        result = RequestServices().get_request(solicitud_id, usuario)
+        return Response({'solicitud': result}, status=status.HTTP_200_OK)
+
+
+class AvailableTechniciansView(BaseAPIView):
+    @handle_exceptions
+    def get(self, request, solicitud_id):
+        self.get_lab_technician(request)
+        technicians = RequestServices().get_available_technicians(solicitud_id)
+        return Response(
+            {'total': len(technicians), 'tecnicos': technicians},
+            status=status.HTTP_200_OK,
+        )
+
+
 class RequestApproveView(BaseAPIView):
     @handle_exceptions
     def patch(self, request, solicitud_id):

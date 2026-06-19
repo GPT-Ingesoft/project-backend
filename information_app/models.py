@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 # =============================================================================
@@ -102,6 +103,13 @@ class HorarioAtencion(models.Model):
 
     class Meta:
         db_table = 'horario_atencion'
+
+    def clean(self):
+        super().clean()
+        if self.hora_inicio and self.hora_fin and self.hora_inicio >= self.hora_fin:
+            raise ValidationError({
+                'hora_fin': 'La hora de fin debe ser posterior a la hora de inicio.'
+            })
 
     def __str__(self):
         return f"{self.laboratorio} — {self.get_dia_display()} {self.hora_inicio}–{self.hora_fin}"
@@ -270,6 +278,43 @@ class Intervencion(models.Model):
 # =============================================================================
 # MÓDULO 4: Notificaciones del Sistema
 # =============================================================================
+
+class MantenimientoPreventivo(models.Model):
+    ESTADO_CHOICES = [
+        ('programado', 'Programado'),
+        ('completado', 'Completado'),
+        ('cancelado', 'Cancelado'),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    descripcion = models.TextField()
+    fecha_programada = models.DateTimeField()
+    anticipacion_horas = models.PositiveIntegerField(default=24)
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='programado',
+    )
+    notificado_en = models.DateTimeField(null=True, blank=True)
+
+    equipo = models.ForeignKey(
+        Equipo,
+        on_delete=models.CASCADE,
+        related_name='mantenimientos_preventivos',
+    )
+    tecnicos = models.ManyToManyField(
+        Tecnico,
+        blank=True,
+        related_name='mantenimientos_preventivos',
+    )
+
+    class Meta:
+        db_table = 'mantenimiento_preventivo'
+        ordering = ['fecha_programada']
+
+    def __str__(self):
+        return f"Preventivo #{self.id} - {self.equipo.nombre} ({self.fecha_programada})"
+
 
 class Notificacion(models.Model):
     TIPO_CHOICES = [

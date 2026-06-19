@@ -22,11 +22,15 @@ create_modules(
     "information_app.repositories",
     "information_app.repositories.request_repository",
     "information_app.services",
+    "information_app.services.notification_services",
     "information_app.services.services_utils",
 )
 
 sys.modules["django.db"].transaction = _Transaction
 sys.modules["information_app.repositories.request_repository"].RequestRepository = MagicMock
+sys.modules[
+    "information_app.services.notification_services"
+].NotificationServices = MagicMock
 
 @dataclass
 class _AttachmentData:
