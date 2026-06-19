@@ -6,6 +6,38 @@
 
 ---
 
+## Autenticación y Renovación Automática de Tokens
+
+Esta API utiliza JWT (JSON Web Tokens) para la autenticación. El sistema cuenta con un **middleware de renovación automática** que gestiona los tokens de acceso (access token) y actualización (refresh token) de forma transparente.
+
+### Headers Requeridos para Endpoints Autenticados
+
+Todos los endpoints que requieren autenticación deben incluir los siguientes headers:
+
+| Header | Descripción |
+|---|---|
+| `Authorization` | El access token válido. Formato: `Bearer <access_token>` |
+| `X-Refresh-Token` | El refresh token asociado. Se utiliza para renovar automáticamente el access token si este ha expirado. |
+
+### Renovación Automática
+
+Cuando un access token expira, el middleware intenta automáticamente generar uno nuevo utilizando el refresh token proporcionado en `X-Refresh-Token`. Si la renovación es exitosa:
+
+1.  La solicitud se procesa normalmente con el nuevo access token.
+2.  La respuesta incluirá un nuevo header `X-New-Access-Token` con el token renovado.
+
+### Header de Respuesta: `X-New-Access-Token`
+
+| Header | Descripción |
+|---|---|
+| `X-New-Access-Token` | Este header aparece en la respuesta cuando el middleware ha renovado automáticamente el access token. El cliente debe almacenar este nuevo token para usarlo en futuras solicitudes. |
+
+### Flujo de Renovación Manual (Opcional)
+
+Si el refresh token también ha expirado o es inválido, la renovación automática fallará y el cliente deberá utilizar el endpoint `POST /api/auth/refresh/` para renovar manualmente o iniciar un nuevo flujo de login.
+
+---
+
 ## Módulo de Autenticación
 
 ### 1. Iniciar Login OAuth 2.0
@@ -129,7 +161,9 @@ Endpoint al que redirige el proveedor tras la autenticación. Valida el `state` 
 
 ---
 
-### 3. Renovar Access Token
+### 3. Renovar Access Token (Manual)
+
+> **Nota:** Este endpoint es opcional debido al middleware de renovación automática. Úsalo si el refresh token también ha expirado o si necesitas renovar tokens sin hacer una solicitud autenticada.
 
 #### Endpoint
 
@@ -204,6 +238,7 @@ GET /api/auth/me/
 
 ```
 Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
 ```
 
 #### Respuestas
@@ -231,7 +266,7 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "error": "Token expired. Renew it at POST /auth/refresh/"
+  "error": "Token expired. Include X-Refresh-Token header for automatic renewal."
 }
 ```
 
@@ -260,6 +295,7 @@ POST /api/users/register/
 ```
 Content-Type: application/json
 Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
 ```
 
 ---
@@ -336,6 +372,12 @@ Los campos requeridos varían según el rol:
 }
 ```
 
+```json
+{
+  "error": "Token expired. Include X-Refresh-Token header for automatic renewal."
+}
+```
+
 **`403 Forbidden` — Rol insuficiente**
 
 ```json
@@ -407,6 +449,7 @@ POST /api/equipment/register/
 ```
 Content-Type: application/json
 Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
 ```
  
 #### Body
@@ -471,17 +514,26 @@ Authorization: Bearer <access_token>
 }
 ```
  
-**`403 Forbidden` — Token inválido o rol insuficiente**
+**`401 Unauthorized` — Token ausente, inválido o expirado**
+ 
+```json
+{
+  "error": "Token required. Include the header: Authorization: Bearer <token>"
+}
+```
+
+```json
+{
+  "error": "Token expired. Include X-Refresh-Token header for automatic renewal."
+}
+```
+
+ 
+**`403 Forbidden` — Rol insuficiente**
  
 ```json
 {
   "error": "Only lab technicians can register equipment."
-}
-```
- 
-```json
-{
-  "error": "<token error message>"
 }
 ```
  
@@ -551,6 +603,7 @@ PATCH /api/equipment/{equipment_id}/update/
 ```
 Content-Type: application/json
 Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
 ```
 
 #### Body
@@ -616,17 +669,25 @@ Es una actualización parcial: solo se modifican los campos presentes en el body
 }
 ```
 
-**`403 Forbidden` — Token inválido o rol insuficiente**
+**`401 Unauthorized` — Token ausente, inválido o expirado**
 
 ```json
 {
-  "error": "Only lab technicians can update equipment."
+  "error": "Token required. Include the header: Authorization: Bearer <token>"
 }
 ```
 
 ```json
 {
-  "error": "<token error message>"
+  "error": "Token expired. Include X-Refresh-Token header for automatic renewal."
+}
+```
+
+**`403 Forbidden` — Rol insuficiente**
+
+```json
+{
+  "error": "Only lab technicians can update equipment."
 }
 ```
 
@@ -636,42 +697,3 @@ Es una actualización parcial: solo se modifican los campos presentes en el body
 {
   "error": "Internal error. Please contact support."
 }
-```
-
----
-
-#### Casos de error frecuentes
-
-| Situación | Mensaje de error |
-|---|---|
-| `serial_number` presente en el body | `"Field 'serial_number' cannot be modified."` |
-| Equipo no encontrado | `"Equipment not found."` |
-| Equipo dado de baja | `"Equipment '<name>' is decommissioned and cannot be modified."` |
-| Campo enviado con valor vacío | `"Field '<field>' cannot be empty."` |
-| Estado no reconocido | `"Status '<status>' is not valid. Allowed values: en_mantenimiento, fuera_de_servicio, operativo."` |
-| Criticidad no reconocida | `"Criticality '<criticality>' is not valid. Allowed values: alta, baja, media."` |
-| Código de inventario ya registrado en otro equipo | `"Inventory code '<code>' is already registered. Please use a different code."` |
-| Body sin ningún campo actualizable | `"No valid fields provided for update."` |
-| Body inválido o sin `Content-Type` | `"The request body must be a valid JSON object. Make sure to include the header Content-Type: application/json"` |
-
----
-
-### 10. Actualizar Equipo (Debug)
-
-> ⚠️ **Solo para desarrollo.** Este endpoint no requiere autenticación.
-
-#### Endpoint
-
-```
-PATCH /api/equipment/{equipment_id}/update_debug/
-```
-
-#### Headers
-
-```
-Content-Type: application/json
-```
-
-#### Body y Respuestas
-
-Idénticos al endpoint `PATCH /api/equipment/{equipment_id}/update/`, sin los errores `403`.
