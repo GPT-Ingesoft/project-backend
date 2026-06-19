@@ -210,6 +210,34 @@ CORS_ALLOWED_ORIGINS = [
 ]
 ```
 
+## Middleware
+
+Django utiliza una capa de middleware para procesar peticiones y respuestas antes de que lleguen a las vistas. La configuración incluye componentes estándar y uno personalizado para la gestión de tokens:
+
+```python
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    
+    # Middleware personalizado de renovación automática de tokens
+    'information_app.middleware.AutoTokenRefreshMiddleware',
+    
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
+
+| Middleware | Descripción |
+|---|---|
+| `AutoTokenRefreshMiddleware` | Middleware personalizado que intercepta peticiones y renueva automáticamente el access token si ha expirado, utilizando el refresh token proporcionado en el header `X-Refresh-Token` |
+| `CORSMiddleware` | Maneja las cabeceras CORS para permitir la comunicación entre el backend y el frontend |
+| `CsrfViewMiddleware` | Protección contra ataques de falsificación de solicitudes entre sitios |
+| `AuthenticationMiddleware` | Asocia usuarios con sesiones usando cookies (requerido para Django Admin) |
+
 ---
 
 ## Autenticación (OAuth 2.0 y JWT)
@@ -289,14 +317,3 @@ La estructura de la base de datos está definida en:
 
 ```text
 information_app/models.py
-```
-
-Las entidades, relaciones y configuraciones ORM definidas en este archivo son transformadas automáticamente en tablas PostgreSQL durante la Etapa 4 del script.
-
-![Diagrama Entidad-Relación](./images/Database_ER.png)
-
----
-
-# Siguiente Paso
-
-Continuar con: [docs/backend_execute.md](./backend_execute.md)
