@@ -90,6 +90,10 @@ class UserServices:
     def is_lab_technician(user) -> bool:
         return user.rol == 'laboratorista'
 
+    @staticmethod
+    def is_technician(user) -> bool:
+        return user.rol == 'tecnico'
+
     def _get_or_fail(self, user_id: int):
         user = self.user_repository.get_by_id(user_id)
         if not user:

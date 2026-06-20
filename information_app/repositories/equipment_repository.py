@@ -23,6 +23,7 @@ class EquipmentRepository(BaseRepository):
     def get_equipment_with_history(self, equipment_id: int):
         return (
             self.get_model()
+            .objects
             .prefetch_related(
                 'solicitudes',
                 'solicitudes__intervenciones',

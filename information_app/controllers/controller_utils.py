@@ -95,6 +95,16 @@ class ControllerMixin:
             )
         return user
 
+    def get_lab_technician_or_technician(self, request):
+        if getattr(self, 'skip_auth', False):
+            return None
+        user = self.get_user(request)
+        if not (UserServices.is_lab_technician(user) or UserServices.is_technician(user)):
+            raise AccessDeniedError(
+                'Solo el administrador o el técnico pueden consultar el historial.'
+            )
+        return user
+
     def get_json_data(self, request) -> dict:
         return validate_json_request(request)
 

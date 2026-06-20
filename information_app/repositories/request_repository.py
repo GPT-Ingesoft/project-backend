@@ -9,6 +9,14 @@ from information_app.repositories.repository_utils import BaseRepository
 
 ESTADOS_CIERRE = {'completada', 'cancelada'}
 
+@dataclass
+class AttachmentData:
+    archivo: object
+    tipo: str
+    nombre: str
+    tamanio: int
+    descripcion: str
+
 class RequestRepository(BaseRepository):
 
     def get_model(self):
@@ -97,11 +105,3 @@ class RequestRepository(BaseRepository):
             nombre_archivo=attachment.nombre,
             tamanio_bytes=attachment.tamanio,
         )
-
-@dataclass
-class AttachmentData:
-    archivo: object
-    tipo: str
-    nombre: str
-    tamanio: int
-    descripcion: str
