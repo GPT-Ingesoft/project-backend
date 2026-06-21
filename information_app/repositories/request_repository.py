@@ -17,7 +17,10 @@ class AttachmentData:
     tamanio: int
     descripcion: str
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/feature/equipment-history-roles
 class RequestRepository(BaseRepository):
 
     def get_model(self):

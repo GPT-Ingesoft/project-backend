@@ -70,12 +70,16 @@ class EquipmentCriticalityView(BaseAPIView):
 class EquipmentHistoryView(BaseAPIView):
     @handle_exceptions
     def get(self, request, equipment_id):
+        self.get_lab_technician_or_technician(request)
         return Response(
             EquipmentServices().get_equipment_history(equipment_id),
             status=status.HTTP_200_OK,
         )
 
 # ── Debug endpoints ─────────
+class EquipmentHistoryDebugView(EquipmentHistoryView):
+    skip_auth = True
+    
 class EquipmentDebugView(EquipmentView):
     skip_auth = True
 

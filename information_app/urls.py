@@ -25,6 +25,7 @@ from information_app.controllers.equipment_controller import (
     EquipmentDecommissionView,
     EquipmentCriticalityView,
     EquipmentHistoryView,
+    EquipmentHistoryDebugView,
     EquipmentDebugView,
     EquipmentAvailabilityDebugView,
     EquipmentDecommissionDebugView,
@@ -183,7 +184,13 @@ urlpatterns = [
         name='verify-access-debug'
     ),
 
+    path(
+        'equipment/<int:equipment_id>/history_debug/',
+        EquipmentHistoryDebugView.as_view(),
+        name='equipment-history-debug'
+    ),
     path('equipment/debug/', EquipmentDebugView.as_view(), name='list-equipment-debug'),
+    
     path(
         'equipment/register_debug/',
         RegisterEquipmentDebugView.as_view(),
