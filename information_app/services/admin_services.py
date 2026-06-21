@@ -12,6 +12,30 @@ class AdminServices:
     def get_notification_history(self) -> list:
         return [self._format_notification(n) for n in self.repo.get_notification_history()]
 
+    def get_notification(self, notification_id: int) -> dict:
+        notification = self.repo.get_notification_by_id(notification_id)
+        if not notification:
+            raise ValueError("Notificación no encontrada.")
+        return self._format_notification(notification)
+
+    # ── RF_56 y RF_57: Solicitudes del panel principal ────────────────────
+
+    def get_request_dashboard(self) -> dict:
+        active_requests = list(self.repo.get_active_requests())
+        pending_requests = [
+            request for request in active_requests if request.estado == 'pendiente'
+        ]
+        return {
+            'total_pendientes': len(pending_requests),
+            'solicitudes_pendientes': [
+                self._format_dashboard_request(request) for request in pending_requests
+            ],
+            'total_activas': len(active_requests),
+            'solicitudes_activas': [
+                self._format_dashboard_request(request) for request in active_requests
+            ],
+        }
+
     # ── RF_50: Reporte de fallas ───────────────────────────────────────────
 
     def get_failure_report(self) -> list:
@@ -57,10 +81,31 @@ class AdminServices:
             'mensaje':      n.mensaje,
             'fecha_envio':  n.fecha_envio.isoformat(),
             'solicitud_id': n.solicitud.id if n.solicitud else None,
+            'motivo':       n.mensaje,
             'destinatarios': [
-                {'id': u.id, 'nombre': u.nombre, 'correo': u.correo}
+                {
+                    'id': u.id,
+                    'nombre': u.nombre,
+                    'correo': u.correo,
+                    'rol': u.rol,
+                    'rol_nombre': u.get_rol_display(),
+                }
                 for u in n.destinatarios.all()
             ],
+        }
+
+    @staticmethod
+    def _format_dashboard_request(request) -> dict:
+        return {
+            'id': request.id,
+            'fecha_creacion': request.fecha_creacion.isoformat(),
+            'prioridad': request.prioridad,
+            'estado': request.estado,
+            'descripcion': request.descripcion,
+            'equipo': {
+                'id': request.equipo.id,
+                'nombre': request.equipo.nombre,
+            },
         }
 
     @staticmethod

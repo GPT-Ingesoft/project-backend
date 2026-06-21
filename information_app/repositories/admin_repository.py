@@ -1,6 +1,16 @@
-from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
+from django.db.models import (
+    Avg,
+    Case,
+    Count,
+    DurationField,
+    ExpressionWrapper,
+    F,
+    IntegerField,
+    Value,
+    When,
+)
 from django.utils import timezone
-from information_app.models import Notificacion, Equipo
+from information_app.models import Equipo, Notificacion, Solicitud
 from information_app.repositories.repository_utils import BaseRepository
 
 class AdminRepository(BaseRepository):
@@ -15,6 +25,32 @@ class AdminRepository(BaseRepository):
             .select_related('solicitud')
             .prefetch_related('destinatarios')
             .order_by('-fecha_envio')
+        )
+
+    def get_notification_by_id(self, notification_id: int):
+        return (
+            Notificacion.objects
+            .select_related('solicitud')
+            .prefetch_related('destinatarios')
+            .filter(id=notification_id)
+            .first()
+        )
+
+    @staticmethod
+    def get_active_requests():
+        priority_order = Case(
+            When(prioridad='alta', then=Value(0)),
+            When(prioridad='media', then=Value(1)),
+            When(prioridad='baja', then=Value(2)),
+            default=Value(3),
+            output_field=IntegerField(),
+        )
+        return (
+            Solicitud.objects
+            .select_related('equipo')
+            .filter(estado__in=('pendiente', 'en_proceso'))
+            .annotate(orden_prioridad=priority_order)
+            .order_by('orden_prioridad', 'fecha_creacion')
         )
 
     def get_failure_report(self):

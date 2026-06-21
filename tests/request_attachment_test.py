@@ -8,6 +8,7 @@ class TestUploadAttachment(unittest.TestCase):
         repo = MagicMock()
         repo.get_by_id.return_value = solicitud
         repo.create_attachment.return_value = adjunto or make_attachment()
+        repo.is_user_assigned.return_value = True
 
         svc = RequestServices()
         svc.request_repository = repo
@@ -50,7 +51,7 @@ class TestUploadAttachment(unittest.TestCase):
         result = svc.upload_attachment(
             solicitud_id=1,
             data={
-                "archivo": self._archivo(),
+                "archivo": self._archivo(nombre="foto.png"),
                 "tipo": "imagen",
                 "nombre": "foto.png",
                 "tamanio": 1024,
@@ -70,8 +71,8 @@ class TestUploadAttachment(unittest.TestCase):
         svc.upload_attachment(
             solicitud_id=1,
             data={
-                "archivo": self._archivo(),
-                "nombre": "archivo.bin",
+                "archivo": self._archivo(nombre="evidencia.zip"),
+                "nombre": "evidencia.zip",
                 "tamanio": 10,
                 "descripcion": "Sin tipo especificado",
             },
@@ -80,6 +81,7 @@ class TestUploadAttachment(unittest.TestCase):
 
         _, kwargs = repo.create_attachment.call_args
         attachment = kwargs["attachment"]
+        self.assertEqual(attachment.tipo, "otro")
 
     def test_name_and_description_are_trimmed(self):
         solicitud = make_request(id=1, estado="pendiente")
@@ -98,6 +100,9 @@ class TestUploadAttachment(unittest.TestCase):
         )
 
         _, kwargs = repo.create_attachment.call_args
+        attachment = kwargs["attachment"]
+        self.assertEqual(attachment.nombre, "reporte.pdf")
+        self.assertEqual(attachment.descripcion, "Informe técnico")
     # ── Casos límite / de error ───────────────────────────────────────────
 
     def test_missing_file_raises_error(self):
@@ -168,7 +173,7 @@ class TestUploadAttachment(unittest.TestCase):
             svc.upload_attachment(
                 solicitud_id=1,
                 data={
-                    "archivo": self._archivo(),
+                    "archivo": self._archivo(nombre="archivo.pdf"),
                     "tipo": "audio",
                     "nombre": "archivo.mp3",
                     "tamanio": 10,
@@ -178,6 +183,68 @@ class TestUploadAttachment(unittest.TestCase):
             )
 
         self.assertIn("audio", str(cm.exception))
+        repo.create_attachment.assert_not_called()
+
+    def test_unsupported_file_format_raises_error(self):
+        solicitud = make_request(id=1, estado="en_proceso")
+        svc, repo = self._service(solicitud)
+
+        with self.assertRaises(ValueError) as cm:
+            svc.upload_attachment(
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(nombre="programa.exe"),
+                    "nombre": "programa.exe",
+                    "tamanio": 10,
+                    "descripcion": "Formato no permitido",
+                },
+                usuario=make_user(),
+            )
+
+        self.assertIn("formato", str(cm.exception).lower())
+        repo.create_attachment.assert_not_called()
+
+    def test_file_larger_than_ten_mb_raises_error(self):
+        solicitud = make_request(id=1, estado="en_proceso")
+        svc, repo = self._service(solicitud)
+
+        with self.assertRaises(ValueError) as cm:
+            svc.upload_attachment(
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(
+                        nombre="evidencia.pdf",
+                        tamanio=(10 * 1024 * 1024) + 1,
+                    ),
+                    "nombre": "evidencia.pdf",
+                    "tamanio": (10 * 1024 * 1024) + 1,
+                    "descripcion": "Archivo demasiado grande",
+                },
+                usuario=make_user(),
+            )
+
+        self.assertIn("10 MB", str(cm.exception))
+        repo.create_attachment.assert_not_called()
+
+    def test_unassigned_technician_cannot_upload_evidence(self):
+        solicitud = make_request(id=1, estado="en_proceso")
+        svc, repo = self._service(solicitud)
+        repo.is_user_assigned.return_value = False
+
+        with self.assertRaises(PermissionError) as cm:
+            svc.upload_attachment(
+                solicitud_id=1,
+                data={
+                    "archivo": self._archivo(nombre="evidencia.png"),
+                    "tipo": "imagen",
+                    "nombre": "evidencia.png",
+                    "tamanio": 10,
+                    "descripcion": "Evidencia del trabajo",
+                },
+                usuario=make_user(rol="tecnico"),
+            )
+
+        self.assertIn("asignado", str(cm.exception).lower())
         repo.create_attachment.assert_not_called()
 
     def test_nonexistent_request_raises_error(self):

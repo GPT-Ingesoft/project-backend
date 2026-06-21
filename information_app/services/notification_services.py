@@ -9,7 +9,12 @@ class NotificationServices:
     def __init__(self):
         self.repository = NotificationRepository()
 
-    def notify_request_status_change(self, request, previous_status: str) -> None:
+    def notify_request_status_change(
+        self,
+        request,
+        previous_status: str,
+        reason: str = '',
+    ) -> None:
         if previous_status == request.estado:
             return
 
@@ -18,6 +23,8 @@ class NotificationServices:
             f"La solicitud de mantenimiento #{request.id} cambió de "
             f"'{previous_status}' a '{request.estado}'."
         )
+        if reason:
+            message = f"{message} Motivo: {reason}"
         self._record_and_schedule_email(
             subject=f"Actualización de solicitud #{request.id}",
             message=message,
