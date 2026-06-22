@@ -84,6 +84,25 @@ class RequestAttachmentView(BaseAPIView):
             status=status.HTTP_201_CREATED,
         )
 
+class RequestCreateView(BaseAPIView):
+    @handle_exceptions
+    def post(self, request):
+        usuario = self.get_user(request)
+        result = RequestServices().create_request(self.get_json_data(request), usuario)
+        return Response(
+            {'message': 'Solicitud creada.', 'solicitud': result},
+            status=status.HTTP_201_CREATED
+        )
+
+class RequestDetailView(BaseAPIView):
+    @handle_exceptions
+    def get(self, request, solicitud_id):
+        self.get_lab_technician(request)
+        return Response(
+            RequestServices().get_request_details(solicitud_id),
+            status=status.HTTP_200_OK
+        )
+
 # ── Debug endpoints ─────────────────────────────────────────────────────────
 
 class RequestApproveDebugView(RequestApproveView):
@@ -137,4 +156,10 @@ class RequestAttachmentDebugView(RequestAttachmentView):
         )
 
 class LabScheduleDebugView(LabScheduleView):
+    skip_auth = True
+
+class RequestCreateDebugView(RequestCreateView):
+    skip_auth = True
+
+class RequestDetailDebugView(RequestDetailView):
     skip_auth = True

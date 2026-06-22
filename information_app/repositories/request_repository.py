@@ -40,6 +40,17 @@ class RequestRepository(BaseRepository):
 
     # ── Escritura ─────────────────────────────────────────────────────────
 
+    def link_equipment(self, solicitud_id: int, equipment_id: int):
+        sol = self.get_by_id(solicitud_id)
+        if not sol:
+            raise ValueError("Solicitud no encontrada.")
+        if sol.equipo:
+            raise ValueError("Ya tiene equipo registrado.")
+
+        sol.equipo_id = equipment_id
+        sol.datos_equipo_solicitado = None
+        sol.save()
+
     def replace_assigned_technicians(self, request: Solicitud, technicians):
         Asignacion.objects.filter(solicitud=request).update(activa=False)
         assignments = []

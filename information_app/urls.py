@@ -40,10 +40,15 @@ from information_app.controllers.request_controller import (
     LabScheduleView,
     RequestStatusView,
     RequestAttachmentView,
+    RequestCreateView,
+    RequestDetailView,
+
     RequestApproveDebugView,
     RequestStatusDebugView,
     RequestAttachmentDebugView,
     LabScheduleDebugView,
+    RequestCreateDebugView,
+    RequestDetailDebugView
 )
 
 from information_app.controllers.admin_controller import (
@@ -123,6 +128,16 @@ urlpatterns = [
         'solicitudes/<int:solicitud_id>/adjuntos/',
         RequestAttachmentView.as_view(),
         name='subir-adjunto-solicitud'
+    ),
+    path(
+        'solicitudes/crear/',
+        RequestCreateView.as_view(),
+        name='crear-solicitud'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/detalle/',
+        RequestDetailView.as_view(),
+        name='detalle-solicitud'
     ),
 
 # ── Admin management ───────────────────────────────────────────────────
@@ -234,4 +249,14 @@ urlpatterns = [
         ActiveEquipmentDashboardDebugView.as_view(),
         name='panel-equipos-activos-debug'
     ),
+        path(
+        'solicitudes/crear_debug/',
+        RequestCreateDebugView.as_view(),
+        name='crear-solicitud'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/detalle_debug/',
+        RequestDetailDebugView.as_view(),
+        name='detalle-solicitud'
+    )
 ]

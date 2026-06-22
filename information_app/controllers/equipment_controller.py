@@ -1,6 +1,9 @@
 from rest_framework.response import Response
 from rest_framework import status
+from django.db import transaction
+
 from information_app.services.equipment_services import EquipmentServices
+from information_app.services.request_services import RequestServices
 from information_app.controllers.controller_utils import (
     handle_exceptions,
     require_field,
@@ -18,12 +21,20 @@ class EquipmentView(BaseAPIView):
 
 class RegisterEquipmentView(BaseAPIView):
     @handle_exceptions
+    @transaction.atomic
     def post(self, request):
         self.get_lab_technician(request)
-        equipment = EquipmentServices().register_equipment(self.get_json_data(request))
+        data = self.get_json_data(request)
+
+        solicitud_id = data.pop('solicitud_id', None)
+        equipment_data = EquipmentServices().register_equipment(data)
+
+        if solicitud_id:
+            RequestServices().link_equipment(solicitud_id, equipment_data['id'])
+
         return Response(
-            {'message': 'Equipment registered successfully.', 'equipment': equipment},
-            status=status.HTTP_201_CREATED,
+            {'message': 'Registrado.', 'equipment': equipment_data},
+            status=status.HTTP_201_CREATED
         )
 
 class UpdateEquipmentView(BaseAPIView):

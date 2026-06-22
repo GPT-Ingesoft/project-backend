@@ -135,7 +135,17 @@ class Solicitud(models.Model):
     )
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='solicitudes')
-    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='solicitudes')
+
+    equipo = models.ForeignKey(
+        Equipo,
+        on_delete=models.CASCADE, related_name='solicitudes',
+        null=True, blank=True
+    )
+
+    datos_equipo_solicitado = models.JSONField(
+        null=True, blank=True
+    )
+
     horario_agendado = models.ForeignKey(
         HorarioAtencion,
         on_delete=models.SET_NULL,
@@ -148,7 +158,8 @@ class Solicitud(models.Model):
         db_table = 'solicitud'
 
     def __str__(self):
-        return f"Solicitud #{self.id} — {self.equipo.nombre} [{self.get_estado_display()}]"
+        eq = self.equipo.nombre if self.equipo else "Sin Equipo"
+        return f"Solicitud #{self.id} — {eq} [{self.get_estado_display()}]"
 
 class HistorialEstadoSolicitud(models.Model):
 
