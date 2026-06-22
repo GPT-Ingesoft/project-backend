@@ -32,6 +32,25 @@ class NotificationServices:
             recipients=recipients,
             request=request,
         )
+    
+    def notify_technician_assignment(self, request, technicians) -> None:
+        recipients = [t.usuario for t in technicians]
+        technician_names = ', '.join(t.usuario.nombre for t in technicians)
+        message = (
+            f"Has sido asignado junto con {technician_names} a la solicitud de "
+            f"mantenimiento #{request.id} para el equipo '{request.equipo.nombre}'."
+            if len(technicians) > 1
+            else
+            f"Has sido asignado a la solicitud de mantenimiento #{request.id} "
+            f"para el equipo '{request.equipo.nombre}'."
+        )
+        self._record_and_schedule_email(
+            subject=f"Asignación a solicitud #{request.id}",
+            message=message,
+            notification_type='asignacion_tecnico',
+            recipients=recipients,
+            request=request,
+        )
 
     def notify_preventive_maintenance(self, maintenance, recipients) -> None:
         message = (
