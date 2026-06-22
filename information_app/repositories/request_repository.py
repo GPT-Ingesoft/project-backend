@@ -17,7 +17,6 @@ class AttachmentData:
     tamanio: int
     descripcion: str
 
-
 class RequestRepository(BaseRepository):
 
     def get_model(self):

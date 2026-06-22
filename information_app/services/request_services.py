@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.db import transaction
 from information_app.repositories.request_repository import (
     RequestRepository,
@@ -12,6 +14,13 @@ from information_app.services.notification_services import NotificationServices
 ESTADOS_VALIDOS         = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
 PRIORIDADES_VALIDAS     = {'baja', 'media', 'alta'}
 TIPOS_ADJUNTO_VALIDOS   = {'imagen', 'documento', 'video', 'otro'}
+FORMATOS_ADJUNTO_POR_TIPO = {
+    'imagen': {'.jpeg', '.jpg', '.png', '.webp'},
+    'documento': {'.csv', '.doc', '.docx', '.pdf', '.txt', '.xls', '.xlsx'},
+    'video': {'.mov', '.mp4', '.webm'},
+    'otro': {'.zip'},
+}
+TAMANIO_MAXIMO_ADJUNTO_BYTES = 10 * 1024 * 1024
 REASSIGNABLE_STATUSES   = {'pendiente', 'en_proceso'}
 SERVER_MANAGED_FIELDS   = {'estado', 'fecha_creacion', 'fecha_cierre', 'usuario_id'}
 TRANSICIONES_PERMITIDAS = {
@@ -172,6 +181,7 @@ class RequestServices:
         self.notification_service.notify_request_status_change(
             solicitud,
             estado_anterior,
+            motivo,
         )
         return self._format_request(solicitud)
 
@@ -191,19 +201,19 @@ class RequestServices:
         if not descripcion:
             raise ValueError("El campo 'descripcion' es obligatorio.")
 
-        tipo = validate_enum(
-            data.get('tipo', 'otro').strip().lower(),
-            TIPOS_ADJUNTO_VALIDOS,
-            'Tipo'
-        )
-
-        tamanio = data.get('tamanio', 0)
+        tamanio = getattr(archivo, 'size', data.get('tamanio', 0))
+        self._validate_attachment_size(tamanio)
+        tipo = self._validate_attachment_format(archivo, data.get('tipo'))
 
         solicitud = self._get_request_or_fail(solicitud_id)
         if solicitud.estado in ('completada', 'cancelada'):
             raise ValueError(
                 f"No se pueden adjuntar archivos a una solicitud en estado "
                 f"'{solicitud.estado}'."
+            )
+        if usuario and not self.request_repository.is_user_assigned(solicitud, usuario.id):
+            raise PermissionError(
+                "Solo un técnico asignado a la solicitud puede adjuntar evidencias."
             )
 
         adjunto = self.request_repository.create_attachment(
@@ -218,6 +228,53 @@ class RequestServices:
             usuario=usuario,
         )
         return self._format_attachment(adjunto)
+
+    @staticmethod
+    def _validate_attachment_size(tamanio) -> None:
+        if not isinstance(tamanio, int) or isinstance(tamanio, bool) or tamanio <= 0:
+            raise ValueError("El archivo adjunto debe contener información.")
+        if tamanio > TAMANIO_MAXIMO_ADJUNTO_BYTES:
+            maximo_mb = TAMANIO_MAXIMO_ADJUNTO_BYTES // (1024 * 1024)
+            raise ValueError(
+                f"El archivo supera el tamaño máximo permitido de {maximo_mb} MB."
+            )
+
+    @staticmethod
+    def _validate_attachment_format(archivo, requested_type) -> str:
+        extension = Path(getattr(archivo, 'name', '')).suffix.lower()
+        inferred_type = next(
+            (
+                attachment_type
+                for attachment_type, extensions in FORMATOS_ADJUNTO_POR_TIPO.items()
+                if extension in extensions
+            ),
+            None,
+        )
+        if not inferred_type:
+            allowed = sorted(
+                file_extension
+                for extensions in FORMATOS_ADJUNTO_POR_TIPO.values()
+                for file_extension in extensions
+            )
+            raise ValueError(
+                "El formato del archivo no está permitido. "
+                f"Formatos admitidos: {', '.join(allowed)}."
+            )
+
+        if requested_type is None or not str(requested_type).strip():
+            return inferred_type
+
+        attachment_type = validate_enum(
+            str(requested_type).strip().lower(),
+            TIPOS_ADJUNTO_VALIDOS,
+            'Tipo',
+        )
+        if attachment_type != inferred_type:
+            raise ValueError(
+                f"El archivo '{archivo.name}' no corresponde al tipo "
+                f"'{attachment_type}'."
+            )
+        return attachment_type
 
     # ── Formatters ───────────────────────────────────────────────────────────
 

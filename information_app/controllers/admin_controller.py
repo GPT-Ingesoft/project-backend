@@ -13,6 +13,25 @@ class NotificationHistoryView(BaseAPIView):
             status=status.HTTP_200_OK
         )
 
+class NotificationDetailView(BaseAPIView):
+    @handle_exceptions
+    def get(self, request, notification_id):
+        self.get_lab_technician(request)
+        notification = AdminServices().get_notification(notification_id)
+        return Response(
+            {'notificacion': notification},
+            status=status.HTTP_200_OK,
+        )
+
+class RequestDashboardView(BaseAPIView):
+    @handle_exceptions
+    def get(self, request):
+        self.get_lab_technician(request)
+        return Response(
+            AdminServices().get_request_dashboard(),
+            status=status.HTTP_200_OK,
+        )
+
 class FailureReportView(BaseAPIView):
     @handle_exceptions
     def get(self, request):
@@ -53,6 +72,12 @@ class ActiveEquipmentDashboardView(BaseAPIView):
 # ── Debug endpoints ─────────────────────────────────────────────────────────
 
 class NotificationHistoryDebugView(NotificationHistoryView):
+    skip_auth = True
+
+class NotificationDetailDebugView(NotificationDetailView):
+    skip_auth = True
+
+class RequestDashboardDebugView(RequestDashboardView):
     skip_auth = True
 
 class FailureReportDebugView(FailureReportView):

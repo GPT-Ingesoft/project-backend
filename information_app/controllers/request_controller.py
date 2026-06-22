@@ -106,7 +106,7 @@ class RequestAttachmentView(BaseAPIView):
             solicitud_id=solicitud_id,
             data={
                 'archivo':     archivo,
-                'tipo':        request.data.get('tipo', 'otro'),
+                'tipo':        request.data.get('tipo'),
                 'nombre':      request.data.get('nombre_archivo', '') or archivo.name,
                 'tamanio':     archivo.size,
                 'descripcion': request.data.get('descripcion', ''),
@@ -158,7 +158,7 @@ class RequestAttachmentDebugView(RequestAttachmentView):
             solicitud_id=solicitud_id,
             data={
                 'archivo':     archivo,
-                'tipo':        request.data.get('tipo', 'otro'),
+                'tipo':        request.data.get('tipo'),
                 'nombre':      request.data.get('nombre_archivo', '') or archivo.name,
                 'tamanio':     archivo.size,
                 'descripcion': request.data.get('descripcion', ''),

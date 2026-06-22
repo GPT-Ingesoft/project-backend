@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 
+import environ
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -49,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    
+
     'information_app.middleware.AutoTokenRefreshMiddleware',
 
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -130,12 +132,13 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-import environ
-from pathlib import Path
 env = environ.Env()
 environ.Env.read_env(Path(__file__).resolve().parent.parent / '.env')
 

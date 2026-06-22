@@ -164,6 +164,10 @@ class MaintenanceRequirementsIntegrationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Notificacion.objects.filter(tipo='cambio_estado').count(), 1)
+        self.assertIn(
+            'Diagnóstico iniciado',
+            Notificacion.objects.get(tipo='cambio_estado').mensaje,
+        )
         self.assertEqual(len(mail.outbox), 2)
         self.assertEqual(
             {message.to[0] for message in mail.outbox},

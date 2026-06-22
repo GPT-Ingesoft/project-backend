@@ -40,6 +40,27 @@ sys.modules[
     "information_app.services.notification_services"
 ].NotificationServices = MagicMock
 
+def _validate_enum(value, valid_values, field_name):
+    if value not in valid_values:
+        raise ValueError(
+            f"{field_name} '{value}' no es válido. "
+            f"Valores permitidos: {', '.join(sorted(valid_values))}."
+        )
+    return value
+
+def _format_technician_data(technician):
+    return {
+        "id": technician.usuario.id,
+        "name": technician.usuario.nombre,
+        "email": technician.usuario.correo,
+        "specialty": technician.especialidad,
+        "contact": technician.contacto,
+    }
+
+services_utils = sys.modules["information_app.services.services_utils"]
+services_utils.validate_enum = _validate_enum
+services_utils.format_technician_data = _format_technician_data
+
 @dataclass
 class _AttachmentData:
     archivo: object = None

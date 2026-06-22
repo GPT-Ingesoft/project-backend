@@ -25,6 +25,7 @@ from information_app.controllers.equipment_controller import (
     EquipmentDecommissionView,
     EquipmentCriticalityView,
     EquipmentHistoryView,
+    EquipmentHistoryDebugView,
     EquipmentDebugView,
     EquipmentAvailabilityDebugView,
     EquipmentDecommissionDebugView,
@@ -52,11 +53,15 @@ from information_app.controllers.request_controller import (
 
 from information_app.controllers.admin_controller import (
     NotificationHistoryView,
+    NotificationDetailView,
+    RequestDashboardView,
     FailureReportView,
     RepairTimeReportView,
     OutOfServiceReportView,
     ActiveEquipmentDashboardView,
     NotificationHistoryDebugView,
+    NotificationDetailDebugView,
+    RequestDashboardDebugView,
     FailureReportDebugView,
     RepairTimeReportDebugView,
     OutOfServiceReportDebugView,
@@ -147,6 +152,11 @@ urlpatterns = [
 
 # ── Admin management ───────────────────────────────────────────────────
     path('admin/notificaciones/', NotificationHistoryView.as_view(), name='admin-notificaciones'),
+    path(
+        'admin/notificaciones/<int:notification_id>/',
+        NotificationDetailView.as_view(),
+        name='admin-detalle-notificacion',
+    ),
     path('admin/reportes/fallas/', FailureReportView.as_view(), name='admin-reporte-fallas'),
     path('admin/reportes/tiempos-reparacion/',
          RepairTimeReportView.as_view(),
@@ -161,6 +171,11 @@ urlpatterns = [
         'panel/equipos-activos/',
         ActiveEquipmentDashboardView.as_view(),
         name='panel-equipos-activos'
+    ),
+    path(
+        'panel/solicitudes/',
+        RequestDashboardView.as_view(),
+        name='panel-solicitudes',
     ),
 
     #################### DEBUG #######################
@@ -183,7 +198,13 @@ urlpatterns = [
         name='verify-access-debug'
     ),
 
+    path(
+        'equipment/<int:equipment_id>/history_debug/',
+        EquipmentHistoryDebugView.as_view(),
+        name='equipment-history-debug'
+    ),
     path('equipment/debug/', EquipmentDebugView.as_view(), name='list-equipment-debug'),
+    
     path(
         'equipment/register_debug/',
         RegisterEquipmentDebugView.as_view(),
@@ -235,6 +256,11 @@ urlpatterns = [
         name='admin-notificaciones-debug'
     ),
     path(
+        'admin/notificaciones/<int:notification_id>/debug/',
+        NotificationDetailDebugView.as_view(),
+        name='admin-detalle-notificacion-debug',
+    ),
+    path(
         'admin/reportes/fallas_debug/',
         FailureReportDebugView.as_view(),
         name='admin-reporte-fallas-debug'
@@ -253,5 +279,10 @@ urlpatterns = [
         'panel/equipos-activos_debug/',
         ActiveEquipmentDashboardDebugView.as_view(),
         name='panel-equipos-activos-debug'
+    ),
+    path(
+        'panel/solicitudes_debug/',
+        RequestDashboardDebugView.as_view(),
+        name='panel-solicitudes-debug',
     ),
 ]
