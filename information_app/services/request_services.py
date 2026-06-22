@@ -105,8 +105,9 @@ class RequestServices:
             )
 
         self.request_repository.replace_assigned_technicians(request, technicians)
+        self.notification_service.notify_technician_assignment(request, technicians)
         return self._format_assignment(request, technicians)
-
+    
     def get_available_technicians(self, solicitud_id: int) -> list:
         solicitud = self._get_request_or_fail(solicitud_id)
         return [

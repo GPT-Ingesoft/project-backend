@@ -120,6 +120,30 @@ class RequestAttachmentView(BaseAPIView):
 
 # ── Debug endpoints ─────────────────────────────────────────────────────────
 
+class RequestCreateDebugView(BaseAPIView):
+    skip_auth = True
+
+    @handle_exceptions
+    def post(self, request):
+        data = self.get_json_data(request)
+        user_id = data.pop('user_id', None)
+        if not user_id:
+            raise ValidationError("Field 'user_id' is required for debug mode.")
+
+        from information_app.repositories.user_repository import UserRepository
+        usuario = UserRepository().get_by_id(user_id)
+        if not usuario:
+            raise ValidationError(f"Usuario con id {user_id} no encontrado.")
+
+        result = RequestServices().create_request(data, usuario)
+        return Response(
+            {'message': 'Solicitud creada correctamente.', 'solicitud': result},
+            status=status.HTTP_201_CREATED,
+        )
+    
+class RequestTechnicianReassignmentDebugView(RequestTechnicianReassignmentView):
+    skip_auth = True
+
 class RequestApproveDebugView(RequestApproveView):
     skip_auth = True
 

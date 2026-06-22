@@ -38,8 +38,10 @@ from information_app.controllers.equipment_controller import (
 from information_app.controllers.request_controller import (
     AvailableTechniciansView,
     RequestCreateView,
+    RequestCreateDebugView,
     RequestDetailView,
     RequestTechnicianReassignmentView,
+    RequestTechnicianReassignmentDebugView,
     RequestApproveView,
     LabScheduleView,
     RequestStatusView,
@@ -208,6 +210,16 @@ urlpatterns = [
         'equipment/<int:equipment_id>/criticality_debug/',
         EquipmentCriticalityDebugView.as_view(),
         name='equipment-criticality-debug'
+    ),
+    path(
+        'solicitudes/debug/',
+         RequestCreateDebugView.as_view(),
+         name='crear-solicitud-debug'
+    ),
+    path(
+        'solicitudes/<int:request_id>/tecnicos_debug/',
+        RequestTechnicianReassignmentDebugView.as_view(),
+        name='asignar-tecnicos-debug'
     ),
     path(
         'solicitudes/<int:solicitud_id>/aprobar_debug/',
