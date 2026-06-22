@@ -161,6 +161,102 @@ Endpoint al que redirige el proveedor tras la autenticación. Valida el `state` 
 
 ---
 
+## Solicitudes de mantenimiento — RF_29 a RF_33
+
+### Crear solicitud
+
+```
+POST /api/solicitudes/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "descripcion": "El equipo no enciende",
+  "equipo_id": 12,
+  "prioridad": "media",
+  "horario_id": 4
+}
+```
+
+`prioridad` y `horario_id` son opcionales. El sistema asigna automáticamente
+la fecha de creación, el usuario autenticado y el estado `pendiente`. Los
+campos `estado`, `fecha_creacion`, `fecha_cierre` y `usuario_id` no se aceptan
+en el cuerpo.
+
+### Consultar solicitud
+
+```
+GET /api/solicitudes/{solicitud_id}/
+Authorization: Bearer <access_token>
+```
+
+La consulta está disponible para el solicitante, un laboratorista o un técnico
+asignado. La respuesta incluye el bloque `horario_agendado` cuando corresponda.
+
+### Consultar horarios
+
+```
+GET /api/solicitudes/horario/
+GET /api/solicitudes/horario/?laboratorio=Lab%20101
+Authorization: Bearer <access_token>
+```
+
+Sin parámetro retorna los laboratorios disponibles. Con `laboratorio` retorna
+los horarios habilitados para esa ubicación.
+
+### Consultar técnicos disponibles
+
+```
+GET /api/solicitudes/{solicitud_id}/tecnicos-disponibles/
+Authorization: Bearer <access_token de laboratorista>
+```
+
+Retorna técnicos activos que no tengan otra asignación activa en el mismo
+horario. Si la solicitud no tiene horario, retorna todos los técnicos activos.
+
+### Asignar técnicos
+
+```
+PATCH /api/solicitudes/{solicitud_id}/tecnicos/
+Authorization: Bearer <access_token de laboratorista>
+Content-Type: application/json
+```
+
+```json
+{
+  "technician_ids": [8, 11]
+}
+```
+
+La lista reemplaza las asignaciones activas. No admite IDs duplicados,
+técnicos inexistentes o no disponibles, ni solicitudes completadas o
+canceladas.
+
+---
+
+## Notificaciones — RF_45 y RF_46
+
+- Cada cambio real de estado crea una notificación y envía correo al
+  solicitante y a los técnicos asignados activos.
+- Los correos se envían después de confirmar la transacción.
+- La configuración SMTP se recibe mediante `EMAIL_BACKEND`, `EMAIL_HOST`,
+  `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` y
+  `DEFAULT_FROM_EMAIL`.
+
+Los mantenimientos preventivos se procesan con:
+
+```cmd
+python manage.py notificar_mantenimientos_preventivos
+```
+
+El comando notifica una sola vez los mantenimientos `programado` que hayan
+entrado en su ventana de anticipación. Los destinatarios son laboratoristas
+activos y técnicos asignados al mantenimiento.
+
+---
+
 ### 3. Renovar Access Token (Manual)
 
 > **Nota:** Este endpoint es opcional debido al middleware de renovación automática. Úsalo si el refresh token también ha expirado o si necesitas renovar tokens sin hacer una solicitud autenticada.

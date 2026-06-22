@@ -22,11 +22,15 @@ create_modules(
     "information_app.repositories",
     "information_app.repositories.request_repository",
     "information_app.services",
+    "information_app.services.notification_services",
     "information_app.services.services_utils",
 )
 
 sys.modules["django.db"].transaction = _Transaction
 sys.modules["information_app.repositories.request_repository"].RequestRepository = MagicMock
+sys.modules[
+    "information_app.services.notification_services"
+].NotificationServices = MagicMock
 
 @dataclass
 class _AttachmentData:
@@ -92,6 +96,7 @@ class TestRequestReassignmentValidation(unittest.TestCase):
         repo = MagicMock()
         repo.get_by_id.return_value = make_request()
         repo.get_technicians_by_ids.return_value = [make_technician(10)]
+        repo.get_available_technicians.return_value = [make_technician(10)]
 
         service = RequestServices()
         service.request_repository = repo

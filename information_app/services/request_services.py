@@ -7,10 +7,13 @@ from information_app.services.services_utils import (
     format_technician_data,
     validate_enum,
 )
+from information_app.services.notification_services import NotificationServices
 
 ESTADOS_VALIDOS         = {'pendiente', 'en_proceso', 'completada', 'cancelada'}
+PRIORIDADES_VALIDAS     = {'baja', 'media', 'alta'}
 TIPOS_ADJUNTO_VALIDOS   = {'imagen', 'documento', 'video', 'otro'}
 REASSIGNABLE_STATUSES   = {'pendiente', 'en_proceso'}
+SERVER_MANAGED_FIELDS   = {'estado', 'fecha_creacion', 'fecha_cierre', 'usuario_id'}
 TRANSICIONES_PERMITIDAS = {
     'pendiente':   {'en_proceso', 'cancelada'},
     'en_proceso':  {'completada', 'cancelada'},
@@ -21,6 +24,56 @@ TRANSICIONES_PERMITIDAS = {
 class RequestServices:
     def __init__(self):
         self.request_repository = RequestRepository()
+        self.notification_service = NotificationServices()
+
+    @transaction.atomic
+    def create_request(self, data: dict, usuario) -> dict:
+        forbidden = sorted(SERVER_MANAGED_FIELDS.intersection(data))
+        if forbidden:
+            raise ValueError(
+                "Los campos administrados por el servidor no pueden enviarse: "
+                f"{', '.join(forbidden)}."
+            )
+
+        descripcion = str(data.get('descripcion', '')).strip()
+        if not descripcion:
+            raise ValueError("El campo 'descripcion' es obligatorio.")
+
+        equipment_id = data.get('equipo_id')
+        if not isinstance(equipment_id, int) or isinstance(equipment_id, bool):
+            raise ValueError("El campo 'equipo_id' es obligatorio y debe ser un entero.")
+
+        prioridad = validate_enum(
+            str(data.get('prioridad', 'media')).strip().lower(),
+            PRIORIDADES_VALIDAS,
+            'Prioridad',
+        )
+        equipo = self.request_repository.get_equipment_by_id(equipment_id)
+        if not equipo:
+            raise ValueError("Equipo no encontrado.")
+        if equipo.estado == 'dado_de_baja':
+            raise ValueError("No se pueden crear solicitudes para un equipo dado de baja.")
+
+        horario = self._get_valid_schedule(data.get('horario_id'), equipo)
+        solicitud = self.request_repository.create_request(
+            descripcion=descripcion,
+            prioridad=prioridad,
+            usuario=usuario,
+            equipo=equipo,
+            horario_agendado=horario,
+        )
+        return self._format_request(solicitud)
+
+    def get_request(self, solicitud_id: int, usuario) -> dict:
+        solicitud = self._get_request_or_fail(solicitud_id)
+        allowed = (
+            usuario.rol == 'laboratorista'
+            or solicitud.usuario_id == usuario.id
+            or self.request_repository.is_user_assigned(solicitud, usuario.id)
+        )
+        if not allowed:
+            raise PermissionError("No tiene permisos para consultar esta solicitud.")
+        return self._format_request(solicitud)
 
     # ── Reasignación de técnicos ────────────────────────────────────────────
 
@@ -41,8 +94,25 @@ class RequestServices:
         if missing_ids:
             raise ValueError(f"Technician users not found: {', '.join(map(str, missing_ids))}.")
 
+        available_ids = {
+            technician.usuario.id
+            for technician in self.request_repository.get_available_technicians(request)
+        }
+        unavailable_ids = sorted(set(technician_ids) - available_ids)
+        if unavailable_ids:
+            raise ValueError(
+                f"Technicians are not available: {', '.join(map(str, unavailable_ids))}."
+            )
+
         self.request_repository.replace_assigned_technicians(request, technicians)
         return self._format_assignment(request, technicians)
+
+    def get_available_technicians(self, solicitud_id: int) -> list:
+        solicitud = self._get_request_or_fail(solicitud_id)
+        return [
+            format_technician_data(technician)
+            for technician in self.request_repository.get_available_technicians(solicitud)
+        ]
 
     # ── Aprobación ──────────────────────────────────────────────────────────
 
@@ -54,7 +124,12 @@ class RequestServices:
                 f"Solo se pueden aprobar solicitudes en estado 'pendiente'. "
                 f"Estado actual: '{solicitud.estado}'."
             )
+        estado_anterior = solicitud.estado
         solicitud = self.request_repository.approve(solicitud, usuario)
+        self.notification_service.notify_request_status_change(
+            solicitud,
+            estado_anterior,
+        )
         return self._format_request(solicitud)
 
     # ── Horarios ─────────────────────────────────────────────────────────────
@@ -92,7 +167,12 @@ class RequestServices:
                 f"Transiciones permitidas: {', '.join(sorted(transiciones))}."
             )
 
+        estado_anterior = solicitud.estado
         solicitud = self.request_repository.change_status(solicitud, nuevo_estado, motivo, usuario)
+        self.notification_service.notify_request_status_change(
+            solicitud,
+            estado_anterior,
+        )
         return self._format_request(solicitud)
 
     # ── Adjuntos ─────────────────────────────────────────────────────────────
@@ -151,6 +231,10 @@ class RequestServices:
             'equipo':      solicitud.equipo.nombre,
             'usuario':     solicitud.usuario.nombre,
             'created_at':  solicitud.fecha_creacion.isoformat(),
+            'horario_agendado': (
+                RequestServices._format_schedule(solicitud.horario_agendado)
+                if solicitud.horario_agendado else None
+            ),
         }
 
     @staticmethod
@@ -195,6 +279,25 @@ class RequestServices:
         if not request:
             raise ValueError("Request not found.")
         return request
+
+    def _get_valid_schedule(self, schedule_id, equipment):
+        if schedule_id is None:
+            return None
+        if not isinstance(schedule_id, int) or isinstance(schedule_id, bool):
+            raise ValueError("El campo 'horario_id' debe ser un entero.")
+
+        schedule = self.request_repository.get_schedule_by_id(schedule_id)
+        if not schedule:
+            raise ValueError("Horario de atención no encontrado.")
+        if not schedule.disponible:
+            raise ValueError("El horario de atención seleccionado no está disponible.")
+        if schedule.hora_inicio >= schedule.hora_fin:
+            raise ValueError("El horario de atención tiene un rango de horas inválido.")
+        if schedule.laboratorio.strip().casefold() != equipment.ubicacion.strip().casefold():
+            raise ValueError(
+                "El horario de atención no corresponde a la ubicación del equipo."
+            )
+        return schedule
 
     @staticmethod
     def _validate_technician_ids(data: dict) -> list:

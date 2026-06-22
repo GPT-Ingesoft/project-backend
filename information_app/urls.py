@@ -36,6 +36,10 @@ from information_app.controllers.equipment_controller import (
 )
 
 from information_app.controllers.request_controller import (
+    AvailableTechniciansView,
+    RequestCreateView,
+    RequestDetailView,
+    RequestTechnicianReassignmentView,
     RequestApproveView,
     LabScheduleView,
     RequestStatusView,
@@ -104,6 +108,22 @@ urlpatterns = [
     ),
 
 # ── Request management ───────────────────────────────────────────────────
+    path('solicitudes/', RequestCreateView.as_view(), name='crear-solicitud'),
+    path(
+        'solicitudes/<int:solicitud_id>/',
+        RequestDetailView.as_view(),
+        name='detalle-solicitud'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/tecnicos-disponibles/',
+        AvailableTechniciansView.as_view(),
+        name='tecnicos-disponibles'
+    ),
+    path(
+        'solicitudes/<int:request_id>/tecnicos/',
+        RequestTechnicianReassignmentView.as_view(),
+        name='asignar-tecnicos'
+    ),
     path(
         'solicitudes/<int:solicitud_id>/aprobar/',
         RequestApproveView.as_view(),
