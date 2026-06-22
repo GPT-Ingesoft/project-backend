@@ -317,3 +317,14 @@ La estructura de la base de datos está definida en:
 
 ```text
 information_app/models.py
+```
+
+Las entidades, relaciones y configuraciones ORM definidas en este archivo son transformadas automáticamente en tablas PostgreSQL durante la Etapa 4 del script.
+
+![Diagrama Entidad-Relación](./images/Database_ER.png)
+
+---
+
+# Siguiente Paso
+
+Continuar con: [docs/backend_execute.md](./backend_execute.md)

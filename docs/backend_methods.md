@@ -463,7 +463,8 @@ X-Refresh-Token: <refresh_token>
   "serial_number":  "SN-2024-001",
   "location":       "Laboratorio 3 - Piso 2",
   "status":         "operativo",
-  "criticality":    "alta"
+  "criticality":    "alta",
+  "solicitud_id":   "3"
 }
 ```
  
@@ -479,7 +480,8 @@ X-Refresh-Token: <refresh_token>
 | `location` | string | Sí | Ubicación física del equipo. |
 | `status` | string | No | Estado inicial. Por defecto: `operativo`. Valores: `operativo`, `en_mantenimiento`, `fuera_de_servicio`. |
 | `criticality` | string | No | Criticidad del equipo. Por defecto: `media`. Valores: `alta`, `media`, `baja`. |
- 
+ | `solicitud_id` | integer | **No** | **Nuevo:** ID de la solicitud de mantenimiento. Si se proporciona, el equipo se registra y se vincula automáticamente a esta solicitud, limpiando sus datos provisionales. |
+
 ---
  
 #### Respuestas
@@ -697,3 +699,181 @@ Es una actualización parcial: solo se modifican los campos presentes en el body
 {
   "error": "Internal error. Please contact support."
 }
+```
+
+---
+
+## Módulo 4: Gestión de Solicitudes
+
+Este módulo permite a los docentes crear solicitudes de mantenimiento proporcionando datos provisionales de equipos que aún no están registrados en el inventario. El laboratorista revisa estos datos para registrar el equipo formalmente.
+
+### 10. Crear Solicitud de Mantenimiento
+
+> Requiere autenticación. Disponible para roles `docente` y `laboratorista`.
+
+#### Endpoint
+
+```
+POST /api/solicitudes/crear/
+```
+
+#### Headers
+
+```
+Content-Type: application/json
+Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
+```
+
+#### Body
+
+El docente envía la descripción del problema y un objeto con los datos del equipo (provisionales).
+
+```json
+{
+  "descripcion": "El equipo no enciende y hace ruidos extraños.",
+  "prioridad": "alta",
+  "datos_equipo": {
+    "name": "PC Laboratorio A",
+    "inventory_code": "INV-999",
+    "model": "OptiPlex 9020",
+    "brand": "Dell",
+    "serial_number": "SN-PROVISIONAL-123",
+    "location": "Laboratorio A"
+  }
+}
+```
+
+#### Campos
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `descripcion` | string | Sí | Descripción detallada del problema reportado. |
+| `prioridad` | string | No | Prioridad de la solicitud. Por defecto: `media`. Valores: `alta`, `media`, `baja`. |
+| `datos_equipo` | object | Sí | Objeto JSON con los datos del equipo. Debe contener al menos: `name`, `inventory_code`, `model`, `brand`, `serial_number`, `location`. |
+
+---
+
+#### Respuestas
+
+**`201 Created` — Solicitud creada exitosamente**
+
+```json
+{
+  "message": "Solicitud creada exitosamente. Pendiente de registro de equipo.",
+  "solicitud": {
+    "id": 1,
+    "estado": "pendiente",
+    "prioridad": "alta",
+    "descripcion": "El equipo no enciende y hace ruidos extraños.",
+    "equipo": null,
+    "datos_equipo_solicitado": {
+      "name": "PC Laboratorio A",
+      "inventory_code": "INV-999",
+      "model": "OptiPlex 9020",
+      "brand": "Dell",
+      "serial_number": "SN-PROVISIONAL-123",
+      "location": "Laboratorio A"
+    },
+    "usuario": "Ana Torres",
+    "created_at": "2026-05-25T10:30:00"
+  }
+}
+```
+
+**`400 Bad Request` — Error de validación**
+
+```json
+{
+  "error": "Debe proporcionar los datos del equipo ('datos_equipo')."
+}
+```
+
+**`401 Unauthorized`**
+
+```json
+{
+  "error": "Token required..."
+}
+```
+
+---
+
+### 11. Ver Detalles de Solicitud
+
+> Requiere autenticación. Solo para usuarios con rol `laboratorista`. Permite revisar la solicitud y los datos provisionales del equipo antes de registrar.
+
+#### Endpoint
+
+```
+GET /api/solicitudes/<solicitud_id>/detalle/
+```
+
+#### Headers
+
+```
+Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
+```
+
+#### Respuestas
+
+**`200 OK`**
+
+```json
+{
+  "id": 1,
+  "estado": "pendiente",
+  "prioridad": "alta",
+  "descripcion": "El equipo no enciende...",
+  "equipo": null,
+  "datos_equipo_solicitado": {
+    "name": "PC Laboratorio A",
+    "inventory_code": "INV-999",
+    "model": "OptiPlex 9020",
+    "brand": "Dell",
+    "serial_number": "SN-PROVISIONAL-123",
+    "location": "Laboratorio A"
+  },
+  "usuario": "Ana Torres",
+  "created_at": "2026-05-25T10:30:00"
+}
+```
+
+---
+
+### 12. Crear Solicitud (Debug)
+
+> ⚠️ **Solo para desarrollo.** No requiere autenticación.
+
+#### Endpoint
+
+```
+POST /api/solicitudes/crear_debug/
+```
+
+#### Headers
+
+```
+Content-Type: application/json
+```
+
+#### Body y Respuestas
+
+Idénticos al endpoint `POST /api/solicitudes/crear/`, sin la necesidad de enviar tokens JWT.
+
+---
+
+### 13. Ver Detalles de Solicitud (Debug)
+
+> ⚠️ **Solo para desarrollo.** No requiere autenticación.
+
+#### Endpoint
+
+```
+GET /api/solicitudes/<solicitud_id>/detalle_debug/
+```
+
+#### Respuestas
+
+Idénticas al endpoint `GET /api/solicitudes/<id>/detalle/`, sin necesidad de enviar tokens JWT.
