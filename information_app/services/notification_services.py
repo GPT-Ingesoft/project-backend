@@ -39,13 +39,14 @@ class NotificationServices:
 
         recipients = [t.usuario for t in technicians]
         technician_names = ', '.join(t.usuario.nombre for t in technicians)
+        equipment_name = self._request_equipment_name(request)
         message = (
             f"Se asignaron los siguientes técnicos a la solicitud de mantenimiento "
-            f"#{request.id}: {technician_names}. Equipo: '{request.equipo.nombre}'."
+            f"#{request.id}: {technician_names}. Equipo: '{equipment_name}'."
             if len(technicians) > 1
             else
             f"Has sido asignado a la solicitud de mantenimiento #{request.id} "
-            f"para el equipo '{request.equipo.nombre}'."
+            f"para el equipo '{equipment_name}'."
         )
         self._record_and_schedule_email(
             subject=f"Asignación a solicitud #{request.id}",
@@ -101,6 +102,13 @@ class NotificationServices:
             .filter(activa=True)
         )
         return recipients
+
+    @staticmethod
+    def _request_equipment_name(request) -> str:
+        if request.equipo:
+            return request.equipo.nombre
+        provisional_data = request.datos_equipo_solicitado or {}
+        return provisional_data.get('name', 'pendiente de registro')
 
     @staticmethod
     def get_unique_active_recipients(recipients):

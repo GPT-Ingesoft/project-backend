@@ -103,6 +103,53 @@ class MaintenanceRequirementsIntegrationTests(TestCase):
         self.assertEqual(schedules.status_code, 200)
         self.assertEqual(schedules.data['horarios'][0]['id'], self.schedule.id)
 
+    def test_create_request_with_provisional_equipment_and_link_on_registration(self):
+        response = self.authenticated_client(self.teacher).post(
+            '/api/solicitudes/',
+            {
+                'descripcion': 'Equipo reportado antes de registrarse',
+                'datos_equipo': {
+                    'name': 'Multímetro provisional',
+                    'inventory_code': 'RF-PROV-001',
+                    'model': 'P1',
+                    'brand': 'RF',
+                    'serial_number': 'RF-PROV-SER-001',
+                    'location': 'Lab RF',
+                },
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        request = Solicitud.objects.get()
+        self.assertIsNone(request.equipo)
+        self.assertEqual(
+            request.datos_equipo_solicitado['inventory_code'],
+            'RF-PROV-001',
+        )
+
+        registration = self.authenticated_client(self.admin).post(
+            '/api/equipment/register/',
+            {
+                'name': 'Multímetro registrado',
+                'inventory_code': 'RF-INV-LINK-001',
+                'model': 'L1',
+                'brand': 'RF',
+                'serial_number': 'RF-SER-LINK-001',
+                'location': 'Lab RF',
+                'solicitud_id': request.id,
+            },
+            format='json',
+        )
+
+        self.assertEqual(registration.status_code, 201)
+        request.refresh_from_db()
+        self.assertEqual(
+            request.equipo_id,
+            registration.data['equipment']['id'],
+        )
+        self.assertIsNone(request.datos_equipo_solicitado)
+
     def test_available_technicians_and_multiple_assignment(self):
         target = Solicitud.objects.create(
             descripcion='Solicitud objetivo',

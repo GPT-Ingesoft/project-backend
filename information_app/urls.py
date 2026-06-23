@@ -151,6 +151,16 @@ urlpatterns = [
         RequestAttachmentView.as_view(),
         name='subir-adjunto-solicitud'
     ),
+    path(
+        'solicitudes/crear/',
+        RequestCreateView.as_view(),
+        name='crear-solicitud-alias'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/detalle/',
+        RequestDetailView.as_view(),
+        name='detalle-solicitud-alias'
+    ),
 
 # ── Admin management ───────────────────────────────────────────────────
     path('admin/notificaciones/', NotificationHistoryView.as_view(), name='admin-notificaciones'),
