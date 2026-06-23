@@ -86,6 +86,7 @@ class TestRequestReassignmentAllowed(unittest.TestCase):
             make_technician(20),
         ]
         repo.get_available_technicians.return_value = repo.get_technicians_by_ids.return_value
+        repo.get_active_technician_ids.return_value = set()
 
         service = RequestServices()
         service.request_repository = repo
@@ -122,6 +123,34 @@ class TestRequestReassignmentAllowed(unittest.TestCase):
         self.assertEqual(result["request"]["description"], "The microscope does not turn on.")
         self.assertEqual(result["assigned_technicians"][0]["name"], "Technician 10")
         self.assertEqual(result["assigned_technicians"][1]["email"], "tech20@test.com")
+
+    def test_reassignment_only_notifies_new_technicians(self):
+        service, repo = self._service("pendiente")
+        repo.get_active_technician_ids.return_value = {10}
+
+        service.reassign_technicians(1, {"technician_ids": [10, 20]})
+
+        notified_technicians = (
+            service.notification_service.notify_technician_assignment.call_args.args[1]
+        )
+        self.assertEqual([technician.usuario.id for technician in notified_technicians], [20])
+
+    def test_repeating_same_assignment_does_not_notify(self):
+        service, repo = self._service("pendiente")
+        repo.get_active_technician_ids.return_value = {10, 20}
+
+        service.reassign_technicians(1, {"technician_ids": [10, 20]})
+
+        service.notification_service.notify_technician_assignment.assert_not_called()
+
+    def test_failed_replacement_does_not_notify(self):
+        service, repo = self._service("pendiente")
+        repo.replace_assigned_technicians.side_effect = RuntimeError("Database failure")
+
+        with self.assertRaises(RuntimeError):
+            service.reassign_technicians(1, {"technician_ids": [10, 20]})
+
+        service.notification_service.notify_technician_assignment.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

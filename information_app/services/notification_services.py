@@ -32,13 +32,16 @@ class NotificationServices:
             recipients=recipients,
             request=request,
         )
-    
+
     def notify_technician_assignment(self, request, technicians) -> None:
+        if not technicians:
+            return
+
         recipients = [t.usuario for t in technicians]
         technician_names = ', '.join(t.usuario.nombre for t in technicians)
         message = (
-            f"Has sido asignado junto con {technician_names} a la solicitud de "
-            f"mantenimiento #{request.id} para el equipo '{request.equipo.nombre}'."
+            f"Se asignaron los siguientes técnicos a la solicitud de mantenimiento "
+            f"#{request.id}: {technician_names}. Equipo: '{request.equipo.nombre}'."
             if len(technicians) > 1
             else
             f"Has sido asignado a la solicitud de mantenimiento #{request.id} "

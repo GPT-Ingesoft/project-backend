@@ -97,6 +97,7 @@ class TestRequestReassignmentValidation(unittest.TestCase):
         repo.get_by_id.return_value = make_request()
         repo.get_technicians_by_ids.return_value = [make_technician(10)]
         repo.get_available_technicians.return_value = [make_technician(10)]
+        repo.get_active_technician_ids.return_value = set()
 
         service = RequestServices()
         service.request_repository = repo
@@ -106,6 +107,7 @@ class TestRequestReassignmentValidation(unittest.TestCase):
 
         self.assertIn("20", str(cm.exception))
         repo.replace_assigned_technicians.assert_not_called()
+        service.notification_service.notify_technician_assignment.assert_not_called()
 
     def test_rejects_missing_request(self):
         repo = MagicMock()

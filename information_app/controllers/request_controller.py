@@ -140,7 +140,7 @@ class RequestCreateDebugView(BaseAPIView):
             {'message': 'Solicitud creada correctamente.', 'solicitud': result},
             status=status.HTTP_201_CREATED,
         )
-    
+
 class RequestTechnicianReassignmentDebugView(RequestTechnicianReassignmentView):
     skip_auth = True
 
