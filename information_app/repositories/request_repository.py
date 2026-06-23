@@ -77,6 +77,13 @@ class RequestRepository(BaseRepository):
             activa=True,
         ).exists()
 
+    @staticmethod
+    def get_active_technician_ids(solicitud: Solicitud) -> set:
+        return set(
+            Asignacion.objects.filter(solicitud=solicitud, activa=True)
+            .values_list('tecnico_id', flat=True)
+        )
+
     # ── Escritura ─────────────────────────────────────────────────────────
 
     def create_request(  # pylint: disable=too-many-arguments

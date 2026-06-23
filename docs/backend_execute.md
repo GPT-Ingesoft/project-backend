@@ -78,3 +78,19 @@ http://127.0.0.1:8000/
 # Siguiente Paso
 
 Continuar con: [docs/backend_methods.md](./backend_methods.md)
+
+---
+
+## Ejecución de pruebas
+
+La validación del backend se divide entre pruebas unitarias y pruebas de
+integración Django:
+
+```cmd
+python -m pytest tests
+python manage.py test tests.backend_requirements_integration tests.integration_tests
+```
+
+El primer comando ejecuta las pruebas unitarias aisladas. El segundo crea una
+base temporal, aplica las migraciones y valida los endpoints, el ORM y las
+notificaciones sin persistir datos de prueba.

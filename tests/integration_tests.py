@@ -146,6 +146,138 @@ class MaintenanceRequirementsIntegrationTests(TestCase):
             ).exists()
         )
 
+    def test_repeating_same_assignment_does_not_duplicate_notification(self):
+        request = Solicitud.objects.create(
+            descripcion='Asignación idempotente',
+            usuario=self.teacher,
+            equipo=self.equipment,
+        )
+        client = self.authenticated_client(self.admin)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            first = client.patch(
+                f'/api/solicitudes/{request.id}/tecnicos/',
+                {'technician_ids': [self.tech_user_1.id]},
+                format='json',
+            )
+        with self.captureOnCommitCallbacks(execute=True):
+            repeated = client.patch(
+                f'/api/solicitudes/{request.id}/tecnicos/',
+                {'technician_ids': [self.tech_user_1.id]},
+                format='json',
+            )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(repeated.status_code, 200)
+        self.assertEqual(
+            Notificacion.objects.filter(tipo='asignacion_tecnico').count(),
+            1,
+        )
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_initial_multiple_assignment_notifies_each_technician_once(self):
+        request = Solicitud.objects.create(
+            descripcion='Asignación inicial múltiple',
+            usuario=self.teacher,
+            equipo=self.equipment,
+        )
+        client = self.authenticated_client(self.admin)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = client.patch(
+                f'/api/solicitudes/{request.id}/tecnicos/',
+                {
+                    'technician_ids': [
+                        self.tech_user_1.id,
+                        self.tech_user_2.id,
+                    ]
+                },
+                format='json',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        notification = Notificacion.objects.get(tipo='asignacion_tecnico')
+        self.assertEqual(notification.destinatarios.count(), 2)
+        self.assertIn('Se asignaron los siguientes técnicos', notification.mensaje)
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_adding_technician_only_notifies_new_recipient(self):
+        request = Solicitud.objects.create(
+            descripcion='Asignación incremental',
+            usuario=self.teacher,
+            equipo=self.equipment,
+        )
+        client = self.authenticated_client(self.admin)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            client.patch(
+                f'/api/solicitudes/{request.id}/tecnicos/',
+                {'technician_ids': [self.tech_user_1.id]},
+                format='json',
+            )
+        mail.outbox.clear()
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = client.patch(
+                f'/api/solicitudes/{request.id}/tecnicos/',
+                {'technician_ids': [self.tech_user_1.id, self.tech_user_2.id]},
+                format='json',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.tech_user_2.correo])
+
+    def test_replacing_all_technicians_only_notifies_replacement(self):
+        request = Solicitud.objects.create(
+            descripcion='Reemplazo total',
+            usuario=self.teacher,
+            equipo=self.equipment,
+        )
+        Asignacion.objects.create(solicitud=request, tecnico=self.tech_1)
+        client = self.authenticated_client(self.admin)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = client.patch(
+                f'/api/solicitudes/{request.id}/tecnicos/',
+                {'technician_ids': [self.tech_user_2.id]},
+                format='json',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.tech_user_2.correo])
+        self.assertFalse(
+            Asignacion.objects.get(solicitud=request, tecnico=self.tech_1).activa
+        )
+        self.assertTrue(
+            Asignacion.objects.get(solicitud=request, tecnico=self.tech_2).activa
+        )
+
+    def test_removing_technician_without_additions_does_not_notify(self):
+        request = Solicitud.objects.create(
+            descripcion='Remoción de asignación',
+            usuario=self.teacher,
+            equipo=self.equipment,
+        )
+        Asignacion.objects.create(solicitud=request, tecnico=self.tech_1)
+        Asignacion.objects.create(solicitud=request, tecnico=self.tech_2)
+        client = self.authenticated_client(self.admin)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = client.patch(
+                f'/api/solicitudes/{request.id}/tecnicos/',
+                {'technician_ids': [self.tech_user_1.id]},
+                format='json',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            Notificacion.objects.filter(tipo='asignacion_tecnico').count(),
+            0,
+        )
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_status_change_persists_notification_and_sends_email(self):
         request = Solicitud.objects.create(
             descripcion='Cambio de estado',

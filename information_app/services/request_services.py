@@ -97,6 +97,7 @@ class RequestServices:
                 "'pendiente' or 'en_proceso'."
             )
 
+        active_technician_ids = self.request_repository.get_active_technician_ids(request)
         technicians = self.request_repository.get_technicians_by_ids(technician_ids)
         found_ids = {t.usuario.id for t in technicians}
         missing_ids = sorted(set(technician_ids) - found_ids)
@@ -113,10 +114,19 @@ class RequestServices:
                 f"Technicians are not available: {', '.join(map(str, unavailable_ids))}."
             )
 
+        new_technicians = [
+            technician
+            for technician in technicians
+            if technician.usuario.id not in active_technician_ids
+        ]
         self.request_repository.replace_assigned_technicians(request, technicians)
-        self.notification_service.notify_technician_assignment(request, technicians)
+        if new_technicians:
+            self.notification_service.notify_technician_assignment(
+                request,
+                new_technicians,
+            )
         return self._format_assignment(request, technicians)
-    
+
     def get_available_technicians(self, solicitud_id: int) -> list:
         solicitud = self._get_request_or_fail(solicitud_id)
         return [
