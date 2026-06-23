@@ -7,6 +7,7 @@ from information_app.repositories.request_repository import (
 )
 from information_app.services.services_utils import (
     format_technician_data,
+    validate_required_fields,
     validate_enum,
 )
 from information_app.services.notification_services import NotificationServices
@@ -23,6 +24,10 @@ FORMATOS_ADJUNTO_POR_TIPO = {
 TAMANIO_MAXIMO_ADJUNTO_BYTES = 10 * 1024 * 1024
 REASSIGNABLE_STATUSES   = {'pendiente', 'en_proceso'}
 SERVER_MANAGED_FIELDS   = {'estado', 'fecha_creacion', 'fecha_cierre', 'usuario_id'}
+REQUIRED_PROVISIONAL_EQUIPMENT_FIELDS = {
+    'name', 'inventory_code', 'model',
+    'brand', 'serial_number', 'location',
+}
 TRANSICIONES_PERMITIDAS = {
     'pendiente':   {'en_proceso', 'cancelada'},
     'en_proceso':  {'completada', 'cancelada'},
@@ -48,28 +53,52 @@ class RequestServices:
         if not descripcion:
             raise ValueError("El campo 'descripcion' es obligatorio.")
 
-        equipment_id = data.get('equipo_id')
-        if not isinstance(equipment_id, int) or isinstance(equipment_id, bool):
-            raise ValueError("El campo 'equipo_id' es obligatorio y debe ser un entero.")
-
         prioridad = validate_enum(
             str(data.get('prioridad', 'media')).strip().lower(),
             PRIORIDADES_VALIDAS,
             'Prioridad',
         )
-        equipo = self.request_repository.get_equipment_by_id(equipment_id)
-        if not equipo:
-            raise ValueError("Equipo no encontrado.")
-        if equipo.estado == 'dado_de_baja':
-            raise ValueError("No se pueden crear solicitudes para un equipo dado de baja.")
 
-        horario = self._get_valid_schedule(data.get('horario_id'), equipo)
+        equipment_id = data.get('equipo_id')
+        provisional_equipment = data.get('datos_equipo')
+        if equipment_id is not None and provisional_equipment is not None:
+            raise ValueError(
+                "Debe proporcionar 'equipo_id' o 'datos_equipo', pero no ambos."
+            )
+        if equipment_id is None and provisional_equipment is None:
+            raise ValueError("Debe proporcionar 'equipo_id' o 'datos_equipo'.")
+
+        equipo = None
+        if equipment_id is not None:
+            if not isinstance(equipment_id, int) or isinstance(equipment_id, bool):
+                raise ValueError("El campo 'equipo_id' debe ser un entero.")
+            equipo = self.request_repository.get_equipment_by_id(equipment_id)
+            if not equipo:
+                raise ValueError("Equipo no encontrado.")
+            if equipo.estado == 'dado_de_baja':
+                raise ValueError("No se pueden crear solicitudes para un equipo dado de baja.")
+            equipment_location = equipo.ubicacion
+        else:
+            if not isinstance(provisional_equipment, dict):
+                raise ValueError("El campo 'datos_equipo' debe ser un objeto.")
+            validate_required_fields(
+                provisional_equipment,
+                REQUIRED_PROVISIONAL_EQUIPMENT_FIELDS,
+            )
+            provisional_equipment = {
+                key: str(provisional_equipment[key]).strip()
+                for key in REQUIRED_PROVISIONAL_EQUIPMENT_FIELDS
+            }
+            equipment_location = provisional_equipment['location']
+
+        horario = self._get_valid_schedule(data.get('horario_id'), equipment_location)
         solicitud = self.request_repository.create_request(
             descripcion=descripcion,
             prioridad=prioridad,
             usuario=usuario,
             equipo=equipo,
             horario_agendado=horario,
+            datos_equipo_solicitado=provisional_equipment,
         )
         return self._format_request(solicitud)
 
@@ -82,6 +111,16 @@ class RequestServices:
         )
         if not allowed:
             raise PermissionError("No tiene permisos para consultar esta solicitud.")
+        return self._format_request(solicitud)
+
+    # ── request ────────────────────────────────────────────
+    def link_equipment(self, solicitud_id: int, equipment_id: int):
+        if not isinstance(solicitud_id, int) or isinstance(solicitud_id, bool):
+            raise ValueError("El campo 'solicitud_id' debe ser un entero.")
+        equipment = self.request_repository.get_equipment_by_id(equipment_id)
+        if not equipment:
+            raise ValueError("Equipo no encontrado.")
+        solicitud = self.request_repository.link_equipment(solicitud_id, equipment)
         return self._format_request(solicitud)
 
     # ── Reasignación de técnicos ────────────────────────────────────────────
@@ -290,18 +329,19 @@ class RequestServices:
     # ── Formatters ───────────────────────────────────────────────────────────
 
     @staticmethod
-    def _format_request(solicitud) -> dict:
+    def _format_request(sol) -> dict:
         return {
-            'id':          solicitud.id,
-            'estado':      solicitud.estado,
-            'prioridad':   solicitud.prioridad,
-            'descripcion': solicitud.descripcion,
-            'equipo':      solicitud.equipo.nombre,
-            'usuario':     solicitud.usuario.nombre,
-            'created_at':  solicitud.fecha_creacion.isoformat(),
+            'id':          sol.id,
+            'estado':      sol.estado,
+            'prioridad':   sol.prioridad,
+            'descripcion': sol.descripcion,
+            'equipo':      sol.equipo.nombre if sol.equipo else None,
+            'datos_equipo_solicitado': sol.datos_equipo_solicitado,
+            'usuario':     sol.usuario.nombre,
+            'created_at':  sol.fecha_creacion.isoformat(),
             'horario_agendado': (
-                RequestServices._format_schedule(solicitud.horario_agendado)
-                if solicitud.horario_agendado else None
+                RequestServices._format_schedule(sol.horario_agendado)
+                if sol.horario_agendado else None
             ),
         }
 
@@ -348,7 +388,7 @@ class RequestServices:
             raise ValueError("Request not found.")
         return request
 
-    def _get_valid_schedule(self, schedule_id, equipment):
+    def _get_valid_schedule(self, schedule_id, equipment_location):
         if schedule_id is None:
             return None
         if not isinstance(schedule_id, int) or isinstance(schedule_id, bool):
@@ -361,7 +401,7 @@ class RequestServices:
             raise ValueError("El horario de atención seleccionado no está disponible.")
         if schedule.hora_inicio >= schedule.hora_fin:
             raise ValueError("El horario de atención tiene un rango de horas inválido.")
-        if schedule.laboratorio.strip().casefold() != equipment.ubicacion.strip().casefold():
+        if schedule.laboratorio.strip().casefold() != equipment_location.strip().casefold():
             raise ValueError(
                 "El horario de atención no corresponde a la ubicación del equipo."
             )

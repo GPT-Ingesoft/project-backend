@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import status
+from information_app.repositories.user_repository import UserRepository
 from information_app.services.request_services import RequestServices
 from information_app.controllers.controller_utils import (
     handle_exceptions,
@@ -130,7 +131,6 @@ class RequestCreateDebugView(BaseAPIView):
         if not user_id:
             raise ValidationError("Field 'user_id' is required for debug mode.")
 
-        from information_app.repositories.user_repository import UserRepository
         usuario = UserRepository().get_by_id(user_id)
         if not usuario:
             raise ValidationError(f"Usuario con id {user_id} no encontrado.")

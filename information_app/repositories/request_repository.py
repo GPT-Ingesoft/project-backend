@@ -92,8 +92,9 @@ class RequestRepository(BaseRepository):
         descripcion: str,
         prioridad: str,
         usuario,
-        equipo,
+        equipo=None,
         horario_agendado=None,
+        datos_equipo_solicitado=None,
     ) -> Solicitud:
         return Solicitud.objects.create(
             descripcion=descripcion,
@@ -102,7 +103,20 @@ class RequestRepository(BaseRepository):
             usuario=usuario,
             equipo=equipo,
             horario_agendado=horario_agendado,
+            datos_equipo_solicitado=datos_equipo_solicitado,
         )
+
+    def link_equipment(self, solicitud_id: int, equipment):
+        sol = self.get_by_id(solicitud_id)
+        if not sol:
+            raise ValueError("Solicitud no encontrada.")
+        if sol.equipo:
+            raise ValueError("Ya tiene equipo registrado.")
+
+        sol.equipo = equipment
+        sol.datos_equipo_solicitado = None
+        sol.save(update_fields=['equipo', 'datos_equipo_solicitado'])
+        return sol
 
     def replace_assigned_technicians(self, request: Solicitud, technicians):
         Asignacion.objects.filter(solicitud=request).update(activa=False)

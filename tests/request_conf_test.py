@@ -57,9 +57,15 @@ def _format_technician_data(technician):
         "contact": technician.contacto,
     }
 
+def _validate_required_fields(data, required_fields):
+    for field in required_fields:
+        if field not in data or not str(data[field]).strip():
+            raise ValueError(f"Field '{field}' is required.")
+
 services_utils = sys.modules["information_app.services.services_utils"]
 services_utils.validate_enum = _validate_enum
 services_utils.format_technician_data = _format_technician_data
+services_utils.validate_required_fields = _validate_required_fields
 
 @dataclass
 class _AttachmentData:
@@ -113,6 +119,7 @@ def make_request(
     s.descripcion = descripcion
     s.usuario = usuario or make_user()
     s.equipo = equipo or make_equipment()
+    s.datos_equipo_solicitado = None
     s.fecha_creacion = datetime(2024, 1, 1, tzinfo=timezone.utc)
     s.fecha_cierre = None
     return s

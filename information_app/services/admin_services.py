@@ -102,10 +102,14 @@ class AdminServices:
             'prioridad': request.prioridad,
             'estado': request.estado,
             'descripcion': request.descripcion,
-            'equipo': {
-                'id': request.equipo.id,
-                'nombre': request.equipo.nombre,
-            },
+            'equipo': (
+                {
+                    'id': request.equipo.id,
+                    'nombre': request.equipo.nombre,
+                }
+                if request.equipo else None
+            ),
+            'datos_equipo_solicitado': request.datos_equipo_solicitado,
         }
 
     @staticmethod

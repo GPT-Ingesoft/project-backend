@@ -559,7 +559,8 @@ X-Refresh-Token: <refresh_token>
   "serial_number":  "SN-2024-001",
   "location":       "Laboratorio 3 - Piso 2",
   "status":         "operativo",
-  "criticality":    "alta"
+  "criticality":    "alta",
+  "solicitud_id":   "3"
 }
 ```
  
@@ -575,7 +576,8 @@ X-Refresh-Token: <refresh_token>
 | `location` | string | Sí | Ubicación física del equipo. |
 | `status` | string | No | Estado inicial. Por defecto: `operativo`. Valores: `operativo`, `en_mantenimiento`, `fuera_de_servicio`. |
 | `criticality` | string | No | Criticidad del equipo. Por defecto: `media`. Valores: `alta`, `media`, `baja`. |
- 
+ | `solicitud_id` | integer | **No** | **Nuevo:** ID de la solicitud de mantenimiento. Si se proporciona, el equipo se registra y se vincula automáticamente a esta solicitud, limpiando sus datos provisionales. |
+
 ---
  
 #### Respuestas
@@ -793,3 +795,155 @@ Es una actualización parcial: solo se modifican los campos presentes en el body
 {
   "error": "Internal error. Please contact support."
 }
+```
+
+---
+
+## Módulo 4: Gestión de Solicitudes
+
+Este módulo permite crear solicitudes para equipos registrados mediante `equipo_id`
+o para equipos pendientes de registro mediante `datos_equipo`. Los dos campos son
+mutuamente excluyentes.
+
+### 10. Crear Solicitud de Mantenimiento
+
+> Requiere autenticación. Disponible para roles `docente` y `laboratorista`.
+
+#### Endpoint
+
+```
+POST /api/solicitudes/crear/
+```
+
+El endpoint canónico equivalente es `POST /api/solicitudes/`.
+
+#### Headers
+
+```
+Content-Type: application/json
+Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
+```
+
+#### Body
+
+El docente envía la descripción del problema y un objeto con los datos del equipo (provisionales).
+
+```json
+{
+  "descripcion": "El equipo no enciende y hace ruidos extraños.",
+  "prioridad": "alta",
+  "datos_equipo": {
+    "name": "PC Laboratorio A",
+    "inventory_code": "INV-999",
+    "model": "OptiPlex 9020",
+    "brand": "Dell",
+    "serial_number": "SN-PROVISIONAL-123",
+    "location": "Laboratorio A"
+  }
+}
+```
+
+#### Campos
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `descripcion` | string | Sí | Descripción detallada del problema reportado. |
+| `prioridad` | string | No | Prioridad de la solicitud. Por defecto: `media`. Valores: `alta`, `media`, `baja`. |
+| `equipo_id` | integer | Condicional | ID de un equipo ya registrado. No se puede combinar con `datos_equipo`. |
+| `datos_equipo` | object | Condicional | Datos provisionales del equipo. Debe contener: `name`, `inventory_code`, `model`, `brand`, `serial_number`, `location`. No se puede combinar con `equipo_id`. |
+| `horario_id` | integer | No | Horario disponible que debe corresponder a la ubicación del equipo registrado o provisional. |
+
+---
+
+#### Respuestas
+
+**`201 Created` — Solicitud creada exitosamente**
+
+```json
+{
+  "message": "Solicitud creada correctamente.",
+  "solicitud": {
+    "id": 1,
+    "estado": "pendiente",
+    "prioridad": "alta",
+    "descripcion": "El equipo no enciende y hace ruidos extraños.",
+    "equipo": null,
+    "datos_equipo_solicitado": {
+      "name": "PC Laboratorio A",
+      "inventory_code": "INV-999",
+      "model": "OptiPlex 9020",
+      "brand": "Dell",
+      "serial_number": "SN-PROVISIONAL-123",
+      "location": "Laboratorio A"
+    },
+    "usuario": "Ana Torres",
+    "created_at": "2026-05-25T10:30:00"
+  }
+}
+```
+
+**`400 Bad Request` — Error de validación**
+
+```json
+{
+  "error": "Debe proporcionar 'equipo_id' o 'datos_equipo'."
+}
+```
+
+**`401 Unauthorized`**
+
+```json
+{
+  "error": "Token required..."
+}
+```
+
+---
+
+### 11. Ver Detalles de Solicitud
+
+> Requiere autenticación. Disponible para el solicitante, un laboratorista o un
+> técnico asignado.
+
+#### Endpoint
+
+```
+GET /api/solicitudes/<solicitud_id>/detalle/
+```
+
+El endpoint canónico equivalente es `GET /api/solicitudes/<solicitud_id>/`.
+
+#### Headers
+
+```
+Authorization: Bearer <access_token>
+X-Refresh-Token: <refresh_token>
+```
+
+#### Respuestas
+
+**`200 OK`**
+
+```json
+{
+  "solicitud": {
+    "id": 1,
+    "estado": "pendiente",
+    "prioridad": "alta",
+    "descripcion": "El equipo no enciende...",
+    "equipo": null,
+    "datos_equipo_solicitado": {
+      "name": "PC Laboratorio A",
+      "inventory_code": "INV-999",
+      "model": "OptiPlex 9020",
+      "brand": "Dell",
+      "serial_number": "SN-PROVISIONAL-123",
+      "location": "Laboratorio A"
+    },
+    "usuario": "Ana Torres",
+    "created_at": "2026-05-25T10:30:00",
+    "horario_agendado": null
+  }
+}
+```
