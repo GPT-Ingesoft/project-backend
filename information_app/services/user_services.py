@@ -61,19 +61,36 @@ class UserServices:
             raise ValueError(f"Email '{email}' is already registered.")
 
         user = self.user_repository.update(user, nombre=name, correo=email)
+        self.user_repository.registrar_actividad(
+            usuario=user,
+            tipo='actualizacion_perfil',
+            descripcion=f"El usuario actualizó su perfil.",
+        )
         return format_user_data(user)
 
     # ── Gestión de usuarios ─────────────────────────────────────────────────
+
     def assign_role(self, user_id: int, role: str) -> dict:
         if role not in VALID_ROLES:
             raise ValueError(f"Role '{role}' is not valid. Allowed: {', '.join(VALID_ROLES)}.")
         user = self._get_or_fail(user_id)
         user = self.user_repository.update(user, rol=role)
+        self.user_repository.registrar_actividad(
+            usuario=user,
+            tipo='asignacion_rol',
+            descripcion=f"Se asignó el rol '{role}' al usuario.",
+        )
         return format_user_data(user)
 
     def change_status(self, user_id: int, active: bool) -> dict:
         user = self._get_or_fail(user_id)
         user = self.user_repository.update(user, activo=active)
+        estado = 'activada' if active else 'desactivada'
+        self.user_repository.registrar_actividad(
+            usuario=user,
+            tipo='cambio_estado_cuenta',
+            descripcion=f"La cuenta del usuario fue {estado}.",
+        )
         return format_user_data(user)
 
     def verify_access(self, user_id: int) -> dict:
@@ -84,6 +101,20 @@ class UserServices:
 
     def list_users(self) -> list:
         return [format_user_data(u) for u in self.user_repository.get_all()]
+
+    def get_historial_actividad(self, user_id: int) -> list:
+        self._get_or_fail(user_id)
+        registros = self.user_repository.get_historial_actividad(user_id)
+        return [
+            {
+                'id':          r.id,
+                'tipo':        r.tipo,
+                'descripcion': r.descripcion,
+                'fecha':       r.fecha.isoformat(),
+            }
+            for r in registros
+        ]
+
     # ── Helpers ─────────────────────────────────────────────────────────────
 
     @staticmethod
