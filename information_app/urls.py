@@ -18,7 +18,10 @@ from information_app.controllers.user_controller import (
     ChangeStatusDebugView,
     ListUsersDebugView,
     VerifyAccessDebugView,
+    UserActivityHistoryView,
+    UserActivityHistoryDebugView,
 )
+
 from information_app.controllers.equipment_controller import (
     EquipmentView,
     EquipmentAvailabilityView,
@@ -78,6 +81,7 @@ urlpatterns = [
     path('users/', ListUsersView.as_view(), name='list-users'),
     path('users/<int:user_id>/role/', AssignRoleView.as_view(), name='assign-role'),
     path('users/<int:user_id>/status/', ChangeStatusView.as_view(), name='change-status'),
+    path('users/<int:user_id>/historial/',UserActivityHistoryView.as_view(),name='user-activity-history'),
     path('users/me/profile/', UpdateProfileView.as_view(), name='update-profile'),
 
     # ── OAuth 2.0 Authentication ───────────────────────────────────────────────
@@ -306,5 +310,10 @@ urlpatterns = [
         'panel/solicitudes_debug/',
         RequestDashboardDebugView.as_view(),
         name='panel-solicitudes-debug',
+    ),
+    path(
+    'users/<int:user_id>/historial_debug/',
+    UserActivityHistoryDebugView.as_view(),
+    name='user-activity-history-debug'
     ),
 ]

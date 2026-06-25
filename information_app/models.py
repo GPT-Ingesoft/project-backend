@@ -285,6 +285,36 @@ class Intervencion(models.Model):
 
     def __str__(self):
         return f"Intervención #{self.id} — Solicitud #{self.solicitud.id}"
+    
+class HistorialActividadUsuario(models.Model):
+    TIPO_ACTIVIDAD_CHOICES = [
+        ('login', 'Inicio de sesión'),
+        ('creacion_solicitud', 'Creación de solicitud'),
+        ('cambio_estado', 'Cambio de estado de solicitud'),
+        ('carga_adjunto', 'Carga de adjunto'),
+        ('actualizacion_perfil', 'Actualización de perfil'),
+        ('asignacion_rol', 'Asignación de rol'),
+        ('cambio_estado_cuenta', 'Cambio de estado de cuenta'),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    tipo = models.CharField(max_length=50, choices=TIPO_ACTIVIDAD_CHOICES)
+    descripcion = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='historial_actividades'
+    )
+
+    class Meta:
+        db_table = 'historial_actividad_usuario'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.usuario} — {self.get_tipo_display()} ({self.fecha})"
 
 # =============================================================================
 # MÓDULO 4: Notificaciones del Sistema

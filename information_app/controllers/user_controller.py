@@ -70,6 +70,14 @@ class VerifyAccessView(BaseAPIView):
             status=status.HTTP_200_OK,
         )
 
+class UserActivityHistoryView(BaseAPIView):
+    @handle_exceptions
+    def get(self, request, user_id):
+        self.get_lab_technician(request)
+        historial = UserServices().get_historial_actividad(user_id)
+        return Response({'historial': historial}, status=status.HTTP_200_OK)
+
+
 # ── Debug endpoints ─────────────────────────────────────────────────────────
 class RegisterUserDebugView(RegisterUserView):
     skip_auth = True
@@ -84,4 +92,7 @@ class ListUsersDebugView(ListUsersView):
     skip_auth = True
 
 class VerifyAccessDebugView(VerifyAccessView):
+    skip_auth = True
+
+class UserActivityHistoryDebugView(UserActivityHistoryView):
     skip_auth = True
