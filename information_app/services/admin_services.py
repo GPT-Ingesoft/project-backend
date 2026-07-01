@@ -1,4 +1,6 @@
 from information_app.repositories.admin_repository import AdminRepository
+from information_app.repositories.config_repository import ConfigRepository
+from information_app.models import ConfiguracionSistema
 
 UMBRAL_DIAS_DEFAULT = 30
 
@@ -6,6 +8,7 @@ UMBRAL_DIAS_DEFAULT = 30
 class AdminServices:
     def __init__(self):
         self.repo = AdminRepository()
+        self.config_repo = ConfigRepository()
 
     # ── RF_47: Historial de notificaciones ─────────────────────────────────
 
@@ -48,7 +51,37 @@ class AdminServices:
 
     # ── RF_52: Equipos fuera de servicio ────────────────────────────────────
 
-    def get_out_of_service_equipment_report(self, umbral_dias) -> dict:
+     def set_out_of_service_threshold(self, umbral_dias) -> dict:
+        umbral = self._parse_threshold(umbral_dias)
+        self.config_repo.set_value(
+            ConfiguracionSistema.CLAVE_UMBRAL_FUERA_DE_SERVICIO, umbral
+        )
+        return {'umbral_dias': umbral}
+
+    def get_out_of_service_threshold(self) -> dict:
+        return {'umbral_dias': self._get_configured_threshold()}
+
+    def get_out_of_service_equipment_report(self, umbral_dias=None) -> dict:
+        umbral = (
+            self._parse_threshold(umbral_dias)
+            if umbral_dias is not None
+            else self._get_configured_threshold()
+        )
+        equipos = self.repo.get_out_of_service_equipment(umbral)
+        return {
+            'umbral_dias': umbral,
+            'total':       len(equipos),
+            'equipos':     [self._format_out_of_service(e) for e in equipos],
+        }
+
+    def _get_configured_threshold(self) -> int:
+        stored = self.config_repo.get_value(
+            ConfiguracionSistema.CLAVE_UMBRAL_FUERA_DE_SERVICIO
+        )
+        return self._parse_threshold(stored) if stored is not None else UMBRAL_DIAS_DEFAULT
+
+    @staticmethod
+    def _parse_threshold(umbral_dias) -> int:
         try:
             umbral = int(umbral_dias)
             if umbral < 0:
@@ -58,18 +91,24 @@ class AdminServices:
                 f"El parámetro 'umbral_dias' debe ser un número entero positivo. "
                 f"Valor recibido: '{umbral_dias}'."
             ) from exc
-
-        equipos = self.repo.get_out_of_service_equipment(umbral)
-        return {
-            'umbral_dias': umbral,
-            'total':       len(equipos),
-            'equipos':     [self._format_out_of_service(e) for e in equipos],
-        }
+        return umbral
 
     # ── RF_53: Equipos activos ──────────────────────────────────────────────
 
     def get_active_equipment(self) -> list:
-        return [self._format_active_equipment(e) for e in self.repo.get_active_equipment()]
+        return [self._format_equipment(e) for e in self.repo.get_active_equipment()]
+
+    # ── RF_54: Equipos en mantenimiento ──────────────────────────────────────
+
+    def get_maintenance_equipment(self) -> list:
+        return [self._format_equipment(e) for e in self.repo.get_maintenance_equipment()]
+
+    # ── RF_55: Equipos dados de baja ─────────────────────────────────────────
+
+    def get_decommissioned_equipment(self) -> list:
+        return [
+            self._format_decommissioned(e) for e in self.repo.get_decommissioned_equipment()
+        ]
 
     # ── Formatters ──────────────────────────────────────────────────────────
 
@@ -97,19 +136,16 @@ class AdminServices:
     @staticmethod
     def _format_dashboard_request(request) -> dict:
         return {
-            'id': request.id,
-            'fecha_creacion': request.fecha_creacion.isoformat(),
-            'prioridad': request.prioridad,
-            'estado': request.estado,
-            'descripcion': request.descripcion,
+            'id':                       request.id,
+            'fecha_creacion':           request.fecha_creacion.isoformat(),
+            'prioridad':                request.prioridad,
+            'estado':                   request.estado,
+            'descripcion':              request.descripcion,
             'equipo': (
-                {
-                    'id': request.equipo.id,
-                    'nombre': request.equipo.nombre,
-                }
+                {'id': request.equipo.id, 'nombre': request.equipo.nombre}
                 if request.equipo else None
             ),
-            'datos_equipo_solicitado': request.datos_equipo_solicitado,
+            'datos_equipo_solicitado':  request.datos_equipo_solicitado,
         }
 
     @staticmethod
@@ -149,10 +185,21 @@ class AdminServices:
         }
 
     @staticmethod
-    def _format_active_equipment(e) -> dict:
+    def _format_equipment(e) -> dict:
         return {
             'id':        e['id'],
             'nombre':    e['nombre'],
             'ubicacion': e['ubicacion'],
             'estado':    e['estado'],
+        }
+
+    @staticmethod
+    def _format_decommissioned(e) -> dict:
+        return {
+            'id':          e['id'],
+            'nombre':      e['nombre'],
+            'ubicacion':   e['ubicacion'],
+            'estado':      e['estado'],
+            'motivo_baja': e['motivo_baja'],
+            'fecha_baja':  e['fecha_baja'].isoformat() if e['fecha_baja'] else None,
         }
