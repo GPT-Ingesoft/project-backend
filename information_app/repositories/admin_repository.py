@@ -103,3 +103,19 @@ class AdminRepository(BaseRepository):
             .order_by('nombre')
             .values('id', 'nombre', 'ubicacion', 'estado')
         )
+
+    def get_maintenance_equipment(self):
+        return (
+            self.get_model()
+            .filter(estado='en_mantenimiento')
+            .order_by('nombre')
+            .values('id', 'nombre', 'ubicacion', 'estado')
+        )
+
+    def get_decommissioned_equipment(self):
+        return (
+            self.get_model()
+            .filter(estado='dado_de_baja')
+            .order_by('nombre')
+            .values('id', 'nombre', 'ubicacion', 'estado', 'motivo_baja', 'fecha_baja')
+        )
