@@ -56,18 +56,24 @@ from information_app.controllers.request_controller import (
 from information_app.controllers.admin_controller import (
     NotificationHistoryView,
     NotificationDetailView,
-    RequestDashboardView,
-    FailureReportView,
-    RepairTimeReportView,
-    OutOfServiceReportView,
-    ActiveEquipmentDashboardView,
     NotificationHistoryDebugView,
     NotificationDetailDebugView,
+    RequestDashboardView,
     RequestDashboardDebugView,
+    FailureReportView,
     FailureReportDebugView,
+    RepairTimeReportView,
     RepairTimeReportDebugView,
+    OutOfServiceReportView,
     OutOfServiceReportDebugView,
+    OutOfServiceThresholdView,
+    OutOfServiceThresholdDebugView,
+    ActiveEquipmentDashboardView,
     ActiveEquipmentDashboardDebugView,
+    MaintenanceEquipmentDashboardView,
+    MaintenanceEquipmentDashboardDebugView,
+    DecommissionedEquipmentDashboardView,
+    DecommissionedEquipmentDashboardDebugView,
 )
 
 app_name = 'information_app'
@@ -115,7 +121,10 @@ urlpatterns = [
     ),
 
 # ── Request management ───────────────────────────────────────────────────
-    path('solicitudes/', RequestCreateView.as_view(), name='crear-solicitud'),
+    path('solicitudes/', 
+         RequestCreateView.as_view(), 
+         name='crear-solicitud'
+    ),
     path(
         'solicitudes/<int:solicitud_id>/',
         RequestDetailView.as_view(),
@@ -163,13 +172,25 @@ urlpatterns = [
     ),
 
 # ── Admin management ───────────────────────────────────────────────────
-    path('admin/notificaciones/', NotificationHistoryView.as_view(), name='admin-notificaciones'),
+    path('admin/notificaciones/', 
+         NotificationHistoryView.as_view(), 
+         name='admin-notificaciones'
+    ),
     path(
         'admin/notificaciones/<int:notification_id>/',
         NotificationDetailView.as_view(),
         name='admin-detalle-notificacion',
     ),
-    path('admin/reportes/fallas/', FailureReportView.as_view(), name='admin-reporte-fallas'),
+
+    path('panel/solicitudes/', 
+         RequestDashboardView.as_view(), 
+         name='panel-solicitudes'
+    ),
+    
+    path('admin/reportes/fallas/', 
+         FailureReportView.as_view(), 
+         name='admin-reporte-fallas'
+    ),
     path('admin/reportes/tiempos-reparacion/',
          RepairTimeReportView.as_view(),
          name='admin-reporte-tiempos'
@@ -180,14 +201,24 @@ urlpatterns = [
         name='admin-reporte-fuera-servicio'
     ),
     path(
+        'admin/reportes/fuera-de-servicio/umbral/',
+        OutOfServiceThresholdView.as_view(),
+        name='admin-umbral-fuera-servicio'
+    ),
+    path(
         'panel/equipos-activos/',
         ActiveEquipmentDashboardView.as_view(),
         name='panel-equipos-activos'
     ),
     path(
-        'panel/solicitudes/',
-        RequestDashboardView.as_view(),
-        name='panel-solicitudes',
+        'panel/equipos-mantenimiento/',
+        MaintenanceEquipmentDashboardView.as_view(),
+        name='panel-equipos-mantenimiento'
+    ),
+    path(
+        'panel/equipos-dados-de-baja/',
+        DecommissionedEquipmentDashboardView.as_view(),
+        name='panel-equipos-dados-de-baja'
     ),
 
     #################### DEBUG #######################
@@ -298,6 +329,11 @@ urlpatterns = [
         name='admin-reporte-fuera-servicio-debug'
     ),
     path(
+        'admin/reportes/fuera-de-servicio/umbral_debug/',
+        OutOfServiceThresholdDebugView.as_view(),
+        name='admin-umbral-fuera-servicio-debug'
+    ),
+    path(
         'panel/equipos-activos_debug/',
         ActiveEquipmentDashboardDebugView.as_view(),
         name='panel-equipos-activos-debug'
@@ -306,5 +342,15 @@ urlpatterns = [
         'panel/solicitudes_debug/',
         RequestDashboardDebugView.as_view(),
         name='panel-solicitudes-debug',
+    ),
+    path(
+        'panel/equipos-mantenimiento_debug/',
+        MaintenanceEquipmentDashboardDebugView.as_view(),
+        name='panel-equipos-mantenimiento-debug'
+    ),
+    path(
+        'panel/equipos-dados-de-baja_debug/',
+        DecommissionedEquipmentDashboardDebugView.as_view(),
+        name='panel-equipos-dados-de-baja-debug'
     ),
 ]
