@@ -20,11 +20,11 @@ class TestRequestDeletionProtection(unittest.TestCase):
         with self.assertRaises(PermissionError):
             repo.delete_instance(MagicMock())
 
-    def test_delete_error_message_references_requirement(self):
+    def test_delete_error_message_mentions_solicitudes(self):
         repo = self._repo()
         with self.assertRaises(PermissionError) as cm:
             repo.delete_instance(MagicMock())
-        self.assertIn('RF_36', str(cm.exception))
+        self.assertIn('solicitudes', str(cm.exception).lower())
 
     def test_delete_does_not_call_orm_delete(self):
         repo = self._repo()

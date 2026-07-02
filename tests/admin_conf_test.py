@@ -47,9 +47,6 @@ class _BaseRepository:
 
 
 sys.modules['information_app.repositories.repository_utils'].BaseRepository = _BaseRepository
-
-# AdminRepository y ConfigRepository como stubs (clases vacías)
-# admin_services.py los importa por nombre, así que deben existir como atributo del módulo
 sys.modules['information_app.repositories.admin_repository'].AdminRepository = _BaseRepository
 sys.modules['information_app.repositories.config_repository'].ConfigRepository = _BaseRepository
 
@@ -91,24 +88,20 @@ def make_notification(notification_id, fecha_envio, tipo='otro', mensaje='msg'):
 def make_equipment(equipment_id, nombre, ubicacion='Lab 1', estado='operativo',
                    codigo='COD-01', total_fallas=None, motivo_baja=None,
                    fecha_baja=None, promedio_horas=None, dias_inactivo=None):
-    e = {
-        'id': equipment_id,
-        'nombre': nombre,
-        'ubicacion': ubicacion,
-        'estado': estado,
+    # Todas las claves siempre presentes para que los formatters del servicio
+    # no fallen con KeyError cuando el valor es None.
+    return {
+        'id':                equipment_id,
+        'nombre':            nombre,
+        'ubicacion':         ubicacion,
+        'estado':            estado,
         'codigo_inventario': codigo,
+        'total_fallas':      total_fallas,
+        'motivo_baja':       motivo_baja,
+        'fecha_baja':        fecha_baja,
+        'promedio_horas':    promedio_horas,
+        'dias_inactivo':     dias_inactivo,
     }
-    if total_fallas is not None:
-        e['total_fallas'] = total_fallas
-    if motivo_baja is not None:
-        e['motivo_baja'] = motivo_baja
-    if fecha_baja is not None:
-        e['fecha_baja'] = fecha_baja
-    if promedio_horas is not None:
-        e['promedio_horas'] = promedio_horas
-    if dias_inactivo is not None:
-        e['dias_inactivo'] = dias_inactivo
-    return e
 
 
 def make_admin_service(*, notifications=None, failure=None, repair=None,
