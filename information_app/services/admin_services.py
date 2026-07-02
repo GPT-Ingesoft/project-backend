@@ -51,7 +51,7 @@ class AdminServices:
 
     # ── RF_52: Equipos fuera de servicio ────────────────────────────────────
 
-     def set_out_of_service_threshold(self, umbral_dias) -> dict:
+    def set_out_of_service_threshold(self, umbral_dias) -> dict:
         umbral = self._parse_threshold(umbral_dias)
         self.config_repo.set_value(
             ConfiguracionSistema.CLAVE_UMBRAL_FUERA_DE_SERVICIO, umbral

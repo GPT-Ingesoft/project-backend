@@ -2,16 +2,22 @@ import sys
 import types
 import importlib.util
 import pathlib
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 
-def _create_modules(*names):
+def create_modules(*names):
     for name in names:
         sys.modules.setdefault(name, types.ModuleType(name))
 
 
-_create_modules(
+class _Timezone:
+    @staticmethod
+    def now():
+        return datetime(2024, 1, 1, tzinfo=timezone.utc)
+
+
+create_modules(
     'django', 'django.db', 'django.db.models', 'django.utils',
     'information_app',
     'information_app.models',
@@ -19,25 +25,35 @@ _create_modules(
     'information_app.repositories.admin_repository',
     'information_app.repositories.config_repository',
     'information_app.repositories.repository_utils',
+    'information_app.services',
 )
 
+sys.modules['django.utils'].timezone = _Timezone()
+
+# Stub de ConfiguracionSistema
 _config_model = MagicMock()
 _config_model.CLAVE_UMBRAL_FUERA_DE_SERVICIO = 'umbral_dias_fuera_de_servicio'
 sys.modules['information_app.models'].ConfiguracionSistema = _config_model
 
-for _model_name in (
-    'Asignacion', 'Equipo', 'Solicitud', 'Tecnico',
-    'HistorialEstadoSolicitud', 'Anexo', 'Adjunto', 'HorarioAtencion',
-):
-    setattr(sys.modules['information_app.models'], _model_name, MagicMock())
+# Stubs de modelos que importa request_repository
+for _name in ('Asignacion', 'Equipo', 'Solicitud', 'Tecnico',
+              'HistorialEstadoSolicitud', 'Anexo', 'Adjunto', 'HorarioAtencion'):
+    setattr(sys.modules['information_app.models'], _name, MagicMock())
 
 
+# BaseRepository stub
 class _BaseRepository:
     def get_model(self): ...
 
 
 sys.modules['information_app.repositories.repository_utils'].BaseRepository = _BaseRepository
 
+# AdminRepository y ConfigRepository como stubs (clases vacías)
+# admin_services.py los importa por nombre, así que deben existir como atributo del módulo
+sys.modules['information_app.repositories.admin_repository'].AdminRepository = _BaseRepository
+sys.modules['information_app.repositories.config_repository'].ConfigRepository = _BaseRepository
+
+# Carga dinámica de AdminServices
 _svc_path = (
     pathlib.Path(__file__).resolve().parent.parent
     / 'information_app' / 'services' / 'admin_services.py'
@@ -51,6 +67,7 @@ _spec.loader.exec_module(_mod)
 AdminServices = _mod.AdminServices
 UMBRAL_DIAS_DEFAULT = _mod.UMBRAL_DIAS_DEFAULT
 
+# Ruta a request_repository para los tests de RF_36
 _repo_path = (
     pathlib.Path(__file__).resolve().parent.parent
     / 'information_app' / 'repositories' / 'request_repository.py'
