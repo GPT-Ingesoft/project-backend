@@ -5,8 +5,15 @@ import pathlib
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
+_BASE = pathlib.Path(__file__).resolve().parent.parent
+
+NOW = datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc)
+
 
 def create_modules(*names):
+    # Igual que request_conf_test.py: solo registra el stub si el módulo
+    # real no existe todavía. Si Django ya está cargado (porque un test de
+    # integración corrió antes), setdefault no lo reemplaza.
     for name in names:
         sys.modules.setdefault(name, types.ModuleType(name))
 
@@ -18,7 +25,10 @@ class _Timezone:
 
 
 create_modules(
-    'django', 'django.db', 'django.db.models', 'django.utils',
+    'django',
+    'django.db',
+    'django.db.models',
+    'django.utils',
     'information_app',
     'information_app.models',
     'information_app.repositories',
@@ -28,20 +38,21 @@ create_modules(
     'information_app.services',
 )
 
+# Asignamos atributos solo sobre los módulos que create_modules registró.
+# Si ya existía el módulo real, estas líneas simplemente añaden/sobreescriben
+# atributos en el módulo real — lo cual es inofensivo porque el módulo real
+# ya tiene esos atributos definidos correctamente.
 sys.modules['django.utils'].timezone = _Timezone()
 
-# Stub de ConfiguracionSistema
 _config_model = MagicMock()
 _config_model.CLAVE_UMBRAL_FUERA_DE_SERVICIO = 'umbral_dias_fuera_de_servicio'
 sys.modules['information_app.models'].ConfiguracionSistema = _config_model
 
-# Stubs de modelos que importa request_repository
 for _name in ('Asignacion', 'Equipo', 'Solicitud', 'Tecnico',
               'HistorialEstadoSolicitud', 'Anexo', 'Adjunto', 'HorarioAtencion'):
     setattr(sys.modules['information_app.models'], _name, MagicMock())
 
 
-# BaseRepository stub
 class _BaseRepository:
     def get_model(self): ...
 
@@ -50,28 +61,22 @@ sys.modules['information_app.repositories.repository_utils'].BaseRepository = _B
 sys.modules['information_app.repositories.admin_repository'].AdminRepository = _BaseRepository
 sys.modules['information_app.repositories.config_repository'].ConfigRepository = _BaseRepository
 
-# Carga dinámica de AdminServices
-_svc_path = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / 'information_app' / 'services' / 'admin_services.py'
-)
-_spec = importlib.util.spec_from_file_location('information_app.services.admin_services', _svc_path)
-_mod = importlib.util.module_from_spec(_spec)
-_mod.__package__ = 'information_app.services'
-sys.modules['information_app.services.admin_services'] = _mod
-_spec.loader.exec_module(_mod)
+_svc_key = 'information_app.services.admin_services'
+if _svc_key not in sys.modules:
+    _svc_path = _BASE / 'information_app' / 'services' / 'admin_services.py'
+    _spec = importlib.util.spec_from_file_location(_svc_key, _svc_path)
+    _mod = importlib.util.module_from_spec(_spec)
+    _mod.__package__ = 'information_app.services'
+    sys.modules[_svc_key] = _mod
+    _spec.loader.exec_module(_mod)
 
-AdminServices = _mod.AdminServices
-UMBRAL_DIAS_DEFAULT = _mod.UMBRAL_DIAS_DEFAULT
+AdminServices = sys.modules[_svc_key].AdminServices
+UMBRAL_DIAS_DEFAULT = sys.modules[_svc_key].UMBRAL_DIAS_DEFAULT
 
-# Ruta a request_repository para los tests de RF_36
-_repo_path = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / 'information_app' / 'repositories' / 'request_repository.py'
-)
+_repo_path = _BASE / 'information_app' / 'repositories' / 'request_repository.py'
 
-NOW = datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc)
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def make_notification(notification_id, fecha_envio, tipo='otro', mensaje='msg'):
     n = MagicMock()
@@ -129,7 +134,7 @@ def make_admin_service(*, notifications=None, failure=None, repair=None,
 
 
 def load_request_repository():
-    spec = importlib.util.spec_from_file_location('rr', _repo_path)
+    spec = importlib.util.spec_from_file_location('_rr_test', _repo_path)
     mod = importlib.util.module_from_spec(spec)
     mod.__package__ = 'information_app.repositories'
     spec.loader.exec_module(mod)
