@@ -55,7 +55,7 @@ class AdminRepository(BaseRepository):
 
     def get_failure_report(self):
         return (
-            self.get_model()
+            self.get_model().objects
             .annotate(total_fallas=Count('solicitudes'))
             .filter(total_fallas__gt=0)
             .order_by('-total_fallas')
@@ -64,7 +64,7 @@ class AdminRepository(BaseRepository):
 
     def get_repair_time_report(self):
         return (
-            self.get_model()
+            self.get_model().objects
             .filter(solicitudes__estado='completada', solicitudes__fecha_cierre__isnull=False)
             .annotate(
                 promedio_horas=ExpressionWrapper(
@@ -80,7 +80,7 @@ class AdminRepository(BaseRepository):
     def get_out_of_service_equipment(self, umbral_dias: int):
         ahora = timezone.now()
         equipos = list(
-            self.get_model()
+            self.get_model().objects
             .filter(estado='fuera_de_servicio', fecha_baja__isnull=False)
             .values(
                 'id', 'nombre', 'codigo_inventario',
@@ -98,15 +98,15 @@ class AdminRepository(BaseRepository):
 
     def get_active_equipment(self):
         return (
-            self.get_model()
-            .filter(estado__in=('operativo', 'en_mantenimiento'))
+            self.get_model().objects
+            .filter(estado='operativo')
             .order_by('nombre')
             .values('id', 'nombre', 'ubicacion', 'estado')
         )
 
     def get_maintenance_equipment(self):
         return (
-            self.get_model()
+            self.get_model().objects
             .filter(estado='en_mantenimiento')
             .order_by('nombre')
             .values('id', 'nombre', 'ubicacion', 'estado')
@@ -114,8 +114,9 @@ class AdminRepository(BaseRepository):
 
     def get_decommissioned_equipment(self):
         return (
-            self.get_model()
+            self.get_model().objects
             .filter(estado='dado_de_baja')
             .order_by('nombre')
             .values('id', 'nombre', 'ubicacion', 'estado', 'motivo_baja', 'fecha_baja')
         )
+

@@ -146,7 +146,7 @@ class Solicitud(models.Model):
 
     equipo = models.ForeignKey(
         Equipo,
-        on_delete=models.CASCADE, related_name='solicitudes',
+        on_delete=models.PROTECT, related_name='solicitudes',
         null=True, blank=True
     )
 
