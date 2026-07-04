@@ -50,10 +50,24 @@ from information_app.controllers.request_controller import (
     LabScheduleView,
     RequestStatusView,
     RequestAttachmentView,
+    RequestAttachmentDownloadView,
+    RequestInterventionView,
     RequestApproveDebugView,
     RequestStatusDebugView,
     RequestAttachmentDebugView,
+    RequestInterventionDebugView,
     LabScheduleDebugView,
+)
+
+from information_app.controllers.laboratory_controller import (
+    LaboratoryListCreateView,
+    LaboratoryDetailView,
+    ScheduleListCreateView,
+    ScheduleDetailView,
+    LaboratoryListCreateDebugView,
+    LaboratoryDetailDebugView,
+    ScheduleListCreateDebugView,
+    ScheduleDetailDebugView,
 )
 
 from information_app.controllers.admin_controller import (
@@ -117,6 +131,18 @@ urlpatterns = [
         EquipmentCriticalityView.as_view(),
         name='equipment-criticality'
     ),
+    path('laboratories/', LaboratoryListCreateView.as_view(), name='laboratory-list-create'),
+    path(
+        'laboratories/<int:laboratory_id>/',
+        LaboratoryDetailView.as_view(),
+        name='laboratory-detail'
+    ),
+    path('schedules/', ScheduleListCreateView.as_view(), name='schedule-list-create'),
+    path(
+        'schedules/<int:schedule_id>/',
+        ScheduleDetailView.as_view(),
+        name='schedule-detail'
+    ),
 
 # ── Request management ───────────────────────────────────────────────────
     path('solicitudes/', RequestCreateView.as_view(), name='crear-solicitud'),
@@ -154,6 +180,16 @@ urlpatterns = [
         'solicitudes/<int:solicitud_id>/adjuntos/',
         RequestAttachmentView.as_view(),
         name='subir-adjunto-solicitud'
+    ),
+    path(
+        'adjuntos/<int:attachment_id>/download/',
+        RequestAttachmentDownloadView.as_view(),
+        name='descargar-adjunto'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/intervenciones/',
+        RequestInterventionView.as_view(),
+        name='intervenciones-solicitud'
     ),
     path(
         'solicitudes/crear/',
@@ -246,6 +282,18 @@ urlpatterns = [
         EquipmentCriticalityDebugView.as_view(),
         name='equipment-criticality-debug'
     ),
+    path('laboratories_debug/', LaboratoryListCreateDebugView.as_view(), name='laboratory-list-debug'),
+    path(
+        'laboratories/<int:laboratory_id>/debug/',
+        LaboratoryDetailDebugView.as_view(),
+        name='laboratory-detail-debug'
+    ),
+    path('schedules_debug/', ScheduleListCreateDebugView.as_view(), name='schedule-list-debug'),
+    path(
+        'schedules/<int:schedule_id>/debug/',
+        ScheduleDetailDebugView.as_view(),
+        name='schedule-detail-debug'
+    ),
     path(
         'solicitudes/debug/',
          RequestCreateDebugView.as_view(),
@@ -270,6 +318,11 @@ urlpatterns = [
         'solicitudes/<int:solicitud_id>/adjuntos_debug/',
         RequestAttachmentDebugView.as_view(),
         name='subir-adjunto-debug'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/intervenciones_debug/',
+        RequestInterventionDebugView.as_view(),
+        name='intervenciones-debug'
     ),
     path(
         'solicitudes/horario_debug/',
