@@ -23,7 +23,7 @@ class RequestTechnicianReassignmentView(BaseAPIView):
 class RequestCreateView(BaseAPIView):
     @handle_exceptions
     def post(self, request):
-        usuario = self.get_user(request)
+        usuario = self.get_lab_technician(request)
         result = RequestServices().create_request(
             self.get_json_data(request),
             usuario,
