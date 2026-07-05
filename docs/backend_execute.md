@@ -88,7 +88,7 @@ integración Django:
 
 ```cmd
 python -m pytest tests
-python manage.py test tests.backend_requirements_integration tests.integration_tests
+python manage.py test tests.backend_requirements_integration tests.integration_tests tests.admin_panel_integration_tests tests.admin_protection_integration_tests
 ```
 
 El primer comando ejecuta las pruebas unitarias aisladas. El segundo crea una

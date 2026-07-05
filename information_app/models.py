@@ -164,11 +164,11 @@ class Solicitud(models.Model):
         help_text='Fecha y hora en que la solicitud fue completada o cancelada.',
     )
 
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='solicitudes')
+    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='solicitudes')
 
     equipo = models.ForeignKey(
         Equipo,
-        on_delete=models.CASCADE, related_name='solicitudes',
+        on_delete=models.PROTECT, related_name='solicitudes',
         null=True, blank=True
     )
 
@@ -427,3 +427,18 @@ class NotificacionUsuario(models.Model):
     def __str__(self):
         estado = 'leída' if self.leida else 'no leída'
         return f"Notif #{self.notificacion.id} → {self.usuario.nombre} ({estado})"
+
+class ConfiguracionSistema(models.Model):
+
+    CLAVE_UMBRAL_FUERA_DE_SERVICIO = 'umbral_dias_fuera_de_servicio'
+
+    clave = models.CharField(max_length=100, unique=True)
+    valor = models.CharField(max_length=255)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'configuracion_sistema'
+
+    def __str__(self):
+        return f"{self.clave} = {self.valor}"
+

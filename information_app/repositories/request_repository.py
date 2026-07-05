@@ -22,6 +22,12 @@ class RequestRepository(BaseRepository):
     def get_model(self):
         return Solicitud
 
+    def delete_instance(self, instance):
+        raise PermissionError(
+            "Las solicitudes de mantenimiento no pueden eliminarse ni ocultarse "
+            "del sistema."
+        )
+
     # ── Query operations ─────────────────────────────────────────────────────────
 
     def get_technicians_by_ids(self, technician_ids):
