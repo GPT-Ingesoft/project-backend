@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from django.utils import timezone
 from information_app.models import (
     Asignacion, Equipo, Solicitud, Tecnico,
-    HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion
+    HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion, Intervencion
 )
 from information_app.repositories.repository_utils import BaseRepository
 
@@ -75,6 +75,37 @@ class RequestRepository(BaseRepository):
     def get_equipment_by_id(self, equipment_id: int):
         return Equipo.objects.filter(id=equipment_id).first()
 
+    def list_for_user(self, usuario):
+        qs = (
+            Solicitud.objects
+            .select_related('usuario', 'equipo', 'horario_agendado')
+            .prefetch_related('asignaciones__tecnico__usuario')
+        )
+        if usuario.rol == 'laboratorista':
+            return qs.order_by('-fecha_creacion')
+        if usuario.rol == 'tecnico':
+            return (
+                qs.filter(asignaciones__tecnico__usuario_id=usuario.id, asignaciones__activa=True)
+                .distinct()
+                .order_by('-fecha_creacion')
+            )
+        return qs.filter(usuario_id=usuario.id).order_by('-fecha_creacion')
+
+    def get_full_request_by_id(self, solicitud_id: int):
+        return (
+            Solicitud.objects
+            .select_related('usuario', 'equipo', 'horario_agendado')
+            .prefetch_related(
+                'asignaciones__tecnico__usuario',
+                'historial_estados__usuario',
+                'anexos__responsable',
+                'anexos__adjuntos',
+                'intervenciones__tecnico__usuario',
+            )
+            .filter(id=solicitud_id)
+            .first()
+        )
+
     @staticmethod
     def is_user_assigned(solicitud: Solicitud, user_id: int) -> bool:
         return Asignacion.objects.filter(
@@ -88,6 +119,33 @@ class RequestRepository(BaseRepository):
         return set(
             Asignacion.objects.filter(solicitud=solicitud, activa=True)
             .values_list('tecnico_id', flat=True)
+        )
+
+    def get_technician_by_user_id(self, user_id: int):
+        return Tecnico.objects.select_related('usuario').filter(usuario_id=user_id).first()
+
+    def get_attachments(self, solicitud: Solicitud):
+        return (
+            Adjunto.objects
+            .select_related('anexo', 'anexo__responsable')
+            .filter(anexo__solicitud=solicitud)
+            .order_by('-fecha_carga')
+        )
+
+    def get_attachment_by_id(self, attachment_id: int):
+        return (
+            Adjunto.objects
+            .select_related('anexo', 'anexo__solicitud')
+            .filter(id=attachment_id)
+            .first()
+        )
+
+    def get_interventions(self, solicitud: Solicitud):
+        return (
+            Intervencion.objects
+            .select_related('tecnico__usuario')
+            .filter(solicitud=solicitud)
+            .order_by('-fecha_intervencion')
         )
 
     # ── Escritura ─────────────────────────────────────────────────────────
@@ -180,4 +238,14 @@ class RequestRepository(BaseRepository):
             tipo=attachment.tipo,
             nombre_archivo=attachment.nombre,
             tamanio_bytes=attachment.tamanio,
+        )
+
+    def create_intervention(
+        self, solicitud: Solicitud, tecnico: Tecnico, descripcion: str, observaciones: str
+    ) -> Intervencion:
+        return Intervencion.objects.create(
+            solicitud=solicitud,
+            tecnico=tecnico,
+            descripcion=descripcion,
+            observaciones=observaciones,
         )

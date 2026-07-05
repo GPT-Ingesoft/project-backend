@@ -18,7 +18,10 @@ from information_app.controllers.user_controller import (
     ChangeStatusDebugView,
     ListUsersDebugView,
     VerifyAccessDebugView,
+    UserActivityHistoryView,
+    UserActivityHistoryDebugView,
 )
+
 from information_app.controllers.equipment_controller import (
     EquipmentView,
     EquipmentAvailabilityView,
@@ -47,10 +50,24 @@ from information_app.controllers.request_controller import (
     LabScheduleView,
     RequestStatusView,
     RequestAttachmentView,
+    RequestAttachmentDownloadView,
+    RequestInterventionView,
     RequestApproveDebugView,
     RequestStatusDebugView,
     RequestAttachmentDebugView,
+    RequestInterventionDebugView,
     LabScheduleDebugView,
+)
+
+from information_app.controllers.laboratory_controller import (
+    LaboratoryListCreateView,
+    LaboratoryDetailView,
+    ScheduleListCreateView,
+    ScheduleDetailView,
+    LaboratoryListCreateDebugView,
+    LaboratoryDetailDebugView,
+    ScheduleListCreateDebugView,
+    ScheduleDetailDebugView,
 )
 
 from information_app.controllers.admin_controller import (
@@ -84,6 +101,7 @@ urlpatterns = [
     path('users/', ListUsersView.as_view(), name='list-users'),
     path('users/<int:user_id>/role/', AssignRoleView.as_view(), name='assign-role'),
     path('users/<int:user_id>/status/', ChangeStatusView.as_view(), name='change-status'),
+    path('users/<int:user_id>/historial/',UserActivityHistoryView.as_view(),name='user-activity-history'),
     path('users/me/profile/', UpdateProfileView.as_view(), name='update-profile'),
 
     # ── OAuth 2.0 Authentication ───────────────────────────────────────────────
@@ -118,6 +136,18 @@ urlpatterns = [
         'equipment/<int:equipment_id>/criticality/',
         EquipmentCriticalityView.as_view(),
         name='equipment-criticality'
+    ),
+    path('laboratories/', LaboratoryListCreateView.as_view(), name='laboratory-list-create'),
+    path(
+        'laboratories/<int:laboratory_id>/',
+        LaboratoryDetailView.as_view(),
+        name='laboratory-detail'
+    ),
+    path('schedules/', ScheduleListCreateView.as_view(), name='schedule-list-create'),
+    path(
+        'schedules/<int:schedule_id>/',
+        ScheduleDetailView.as_view(),
+        name='schedule-detail'
     ),
 
 # ── Request management ───────────────────────────────────────────────────
@@ -159,6 +189,16 @@ urlpatterns = [
         'solicitudes/<int:solicitud_id>/adjuntos/',
         RequestAttachmentView.as_view(),
         name='subir-adjunto-solicitud'
+    ),
+    path(
+        'adjuntos/<int:attachment_id>/download/',
+        RequestAttachmentDownloadView.as_view(),
+        name='descargar-adjunto'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/intervenciones/',
+        RequestInterventionView.as_view(),
+        name='intervenciones-solicitud'
     ),
     path(
         'solicitudes/crear/',
@@ -273,6 +313,18 @@ urlpatterns = [
         EquipmentCriticalityDebugView.as_view(),
         name='equipment-criticality-debug'
     ),
+    path('laboratories_debug/', LaboratoryListCreateDebugView.as_view(), name='laboratory-list-debug'),
+    path(
+        'laboratories/<int:laboratory_id>/debug/',
+        LaboratoryDetailDebugView.as_view(),
+        name='laboratory-detail-debug'
+    ),
+    path('schedules_debug/', ScheduleListCreateDebugView.as_view(), name='schedule-list-debug'),
+    path(
+        'schedules/<int:schedule_id>/debug/',
+        ScheduleDetailDebugView.as_view(),
+        name='schedule-detail-debug'
+    ),
     path(
         'solicitudes/debug/',
          RequestCreateDebugView.as_view(),
@@ -297,6 +349,11 @@ urlpatterns = [
         'solicitudes/<int:solicitud_id>/adjuntos_debug/',
         RequestAttachmentDebugView.as_view(),
         name='subir-adjunto-debug'
+    ),
+    path(
+        'solicitudes/<int:solicitud_id>/intervenciones_debug/',
+        RequestInterventionDebugView.as_view(),
+        name='intervenciones-debug'
     ),
     path(
         'solicitudes/horario_debug/',
@@ -352,5 +409,8 @@ urlpatterns = [
         'panel/equipos-dados-de-baja_debug/',
         DecommissionedEquipmentDashboardDebugView.as_view(),
         name='panel-equipos-dados-de-baja-debug'
+    'users/<int:user_id>/historial_debug/',
+    UserActivityHistoryDebugView.as_view(),
+    name='user-activity-history-debug'
     ),
 ]

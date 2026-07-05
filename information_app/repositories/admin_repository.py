@@ -99,7 +99,7 @@ class AdminRepository(BaseRepository):
     def get_active_equipment(self):
         return (
             self.get_model().objects
-            .filter(estado='operativo')
+            .filter(estado__in=('operativo', 'en_mantenimiento'))
             .order_by('nombre')
             .values('id', 'nombre', 'ubicacion', 'estado')
         )

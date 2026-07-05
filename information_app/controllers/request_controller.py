@@ -1,3 +1,4 @@
+from django.http import FileResponse
 from rest_framework.response import Response
 from rest_framework import status
 from information_app.repositories.user_repository import UserRepository
@@ -22,8 +23,19 @@ class RequestTechnicianReassignmentView(BaseAPIView):
 
 class RequestCreateView(BaseAPIView):
     @handle_exceptions
+    def get(self, request):
+        usuario = self.get_user(request)
+        result = RequestServices().list_requests(usuario, request.query_params)
+        return Response(
+            {'total': len(result), 'solicitudes': result},
+            status=status.HTTP_200_OK,
+        )
+
+    @handle_exceptions
     def post(self, request):
         usuario = self.get_user(request)
+        if usuario.rol == 'tecnico':
+            raise PermissionError("Los tecnicos no pueden crear solicitudes.")
         result = RequestServices().create_request(
             self.get_json_data(request),
             usuario,
@@ -38,7 +50,7 @@ class RequestDetailView(BaseAPIView):
     @handle_exceptions
     def get(self, request, solicitud_id):
         usuario = self.get_user(request)
-        result = RequestServices().get_request(solicitud_id, usuario)
+        result = RequestServices().get_request_detail(solicitud_id, usuario, request)
         return Response({'solicitud': result}, status=status.HTTP_200_OK)
 
 
@@ -98,6 +110,15 @@ class RequestStatusView(BaseAPIView):
 
 class RequestAttachmentView(BaseAPIView):
     @handle_exceptions
+    def get(self, request, solicitud_id):
+        usuario = self.get_user(request)
+        attachments = RequestServices().list_attachments(solicitud_id, usuario, request)
+        return Response(
+            {'total': len(attachments), 'adjuntos': attachments},
+            status=status.HTTP_200_OK,
+        )
+
+    @handle_exceptions
     def post(self, request, solicitud_id):
         usuario = self.get_user(request)
         archivo = request.FILES.get('archivo')
@@ -113,9 +134,50 @@ class RequestAttachmentView(BaseAPIView):
                 'descripcion': request.data.get('descripcion', ''),
             },
             usuario=usuario,
+            http_request=request,
         )
         return Response(
             {'message': 'Archivo adjunto cargado correctamente.', 'adjunto': adjunto},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class RequestAttachmentDownloadView(BaseAPIView):
+    skip_auth = True
+
+    @handle_exceptions
+    def get(self, request, attachment_id):
+        token = request.query_params.get('token', '')
+        adjunto = RequestServices().get_attachment_for_download(attachment_id, token)
+        response = FileResponse(
+            adjunto.archivo.open('rb'),
+            as_attachment=True,
+            filename=adjunto.nombre_archivo,
+        )
+        return response
+
+
+class RequestInterventionView(BaseAPIView):
+    @handle_exceptions
+    def get(self, request, solicitud_id):
+        usuario = self.get_user(request)
+        interventions = RequestServices().list_interventions(solicitud_id, usuario)
+        return Response(
+            {'total': len(interventions), 'intervenciones': interventions},
+            status=status.HTTP_200_OK,
+        )
+
+    @handle_exceptions
+    def post(self, request, solicitud_id):
+        usuario = self.get_user(request)
+        intervention = RequestServices().create_intervention(
+            solicitud_id,
+            self.get_json_data(request),
+            usuario,
+        )
+        return Response(
+            {'message': 'Intervencion registrada correctamente.',
+             'intervencion': intervention},
             status=status.HTTP_201_CREATED,
         )
 
@@ -195,4 +257,7 @@ class RequestAttachmentDebugView(RequestAttachmentView):
         )
 
 class LabScheduleDebugView(LabScheduleView):
+    skip_auth = True
+
+class RequestInterventionDebugView(RequestInterventionView):
     skip_auth = True
