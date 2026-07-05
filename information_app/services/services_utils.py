@@ -17,7 +17,7 @@ def validate_enum(value: str, valid_values: set, field_name: str) -> str:
 # ── Helpers - Formatters ───────────────────────────────────────────────────────
 
 def format_user_data(user) -> dict:
-    return {
+    data = {
         'id':         user.id,
         'name':       user.nombre,
         'email':      user.correo,
@@ -25,6 +25,10 @@ def format_user_data(user) -> dict:
         'active':     user.activo,
         'created_at': user.fecha_creacion.isoformat(),
     }
+    if user.rol == 'tecnico' and hasattr(user, 'perfil_tecnico'):
+        data['specialty'] = user.perfil_tecnico.especialidad
+        data['contact'] = user.perfil_tecnico.contacto
+    return data
 
 def format_technician_data(technician) -> dict:
     if not technician:

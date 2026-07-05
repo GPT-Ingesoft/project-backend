@@ -7,6 +7,7 @@ from information_app.controllers.controller_utils import (
     require_field,
     BaseAPIView,
 )
+from information_app.services.services_utils import validate_required_fields
 
 class UpdateProfileView(BaseAPIView):
     @handle_exceptions
@@ -32,7 +33,11 @@ class AssignRoleView(BaseAPIView):
     @handle_exceptions
     def patch(self, request, user_id):
         self.get_lab_technician(request)
-        user = UserServices().assign_role(user_id, require_field(request.data, 'role'))
+        data = self.get_json_data(request)
+        role = require_field(data, 'role')
+        if role == 'tecnico':
+            validate_required_fields(data, ['specialty', 'contact'])
+        user = UserServices().assign_role(user_id, role, data)
         return Response(
             {'message': 'Role updated successfully.', 'user': user},
             status=status.HTTP_200_OK,
@@ -41,12 +46,14 @@ class AssignRoleView(BaseAPIView):
 class ChangeStatusView(BaseAPIView):
     @handle_exceptions
     def patch(self, request, user_id):
-        self.get_lab_technician(request)
+        current_user = self.get_lab_technician(request)
         active = request.data.get('active')
         if active is None:
             raise ValidationError("Field 'active' is required.")
         if not isinstance(active, bool):
             raise ValidationError("Field 'active' must be true or false.")
+        if not active and int(user_id) == int(current_user.id):
+            raise PermissionError("No puedes desactivar tu propia cuenta.")
         user = UserServices().change_status(user_id, active)
         action = 'activated' if active else 'deactivated'
         return Response(

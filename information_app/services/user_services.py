@@ -70,11 +70,36 @@ class UserServices:
 
     # ── Gestión de usuarios ─────────────────────────────────────────────────
 
-    def assign_role(self, user_id: int, role: str) -> dict:
+    def assign_role(self, user_id: int, role: str, data: dict | None = None) -> dict:
         if role not in VALID_ROLES:
             raise ValueError(f"Role '{role}' is not valid. Allowed: {', '.join(VALID_ROLES)}.")
+        data = data or {}
         user = self._get_or_fail(user_id)
         user = self.user_repository.update(user, rol=role)
+        if role == 'tecnico':
+            has_technician_data = all(
+                data.get(field) is not None and str(data.get(field)).strip()
+                for field in TECHNICIAN_FIELDS
+            )
+            if has_technician_data:
+                specialty = data['specialty'].strip()
+                contact = data['contact'].strip()
+                if hasattr(user, 'perfil_tecnico'):
+                    technician = user.perfil_tecnico
+                    self.user_repository.update(
+                        technician,
+                        especialidad=specialty,
+                        contacto=contact,
+                    )
+                else:
+                    self.user_repository.create_technician(
+                        user=user,
+                        specialty=specialty,
+                        contact=contact,
+                    )
+        else:
+            if hasattr(user, 'perfil_tecnico'):
+                user.perfil_tecnico.delete()
         self.user_repository.registrar_actividad(
             usuario=user,
             tipo='asignacion_rol',
