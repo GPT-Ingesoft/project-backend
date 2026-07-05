@@ -80,6 +80,21 @@ class Equipo(models.Model):
     def __str__(self):
         return f"{self.nombre} [{self.get_estado_display()}]"
 
+class Laboratorio(models.Model):
+    id = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100, unique=True)
+    ubicacion = models.CharField(max_length=150, blank=True, default='')
+    descripcion = models.TextField(blank=True, default='')
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'laboratorio'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
 # =============================================================================
 # MÓDULO 3: Gestión de Solicitudes de Mantenimiento
 # =============================================================================
@@ -100,6 +115,13 @@ class HorarioAtencion(models.Model):
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     disponible = models.BooleanField(default=True)
+    laboratorio_ref = models.ForeignKey(
+        Laboratorio,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='horarios',
+    )
 
     class Meta:
         db_table = 'horario_atencion'

@@ -22,6 +22,7 @@ FORMATOS_ADJUNTO_POR_TIPO = {
     'otro': {'.zip'},
 }
 TAMANIO_MAXIMO_ADJUNTO_BYTES = 10 * 1024 * 1024
+ATTACHMENT_DOWNLOAD_MAX_AGE_SECONDS = 10 * 60
 REASSIGNABLE_STATUSES   = {'pendiente', 'en_proceso'}
 SERVER_MANAGED_FIELDS   = {'estado', 'fecha_creacion', 'fecha_cierre', 'usuario_id'}
 REQUIRED_PROVISIONAL_EQUIPMENT_FIELDS = {
@@ -104,6 +105,30 @@ class RequestServices:
 
     def get_request(self, solicitud_id: int, usuario) -> dict:
         solicitud = self._get_request_or_fail(solicitud_id)
+        self._ensure_can_access_request(solicitud, usuario)
+        return self._format_request(solicitud)
+
+    def list_requests(self, usuario, filters=None) -> list:
+        filters = filters or {}
+        requests = self.request_repository.list_for_user(usuario)
+        status_filter = filters.get('estado') or filters.get('status')
+        if status_filter:
+            requests = requests.filter(estado=status_filter)
+        priority_filter = filters.get('prioridad') or filters.get('priority')
+        if priority_filter:
+            requests = requests.filter(prioridad=priority_filter)
+        return [self._format_request_summary(sol) for sol in requests]
+
+    def get_request_detail(self, solicitud_id: int, usuario, http_request=None) -> dict:
+        solicitud = self.request_repository.get_full_request_by_id(solicitud_id)
+        if not solicitud:
+            raise ValueError("Request not found.")
+        self._ensure_can_access_request(solicitud, usuario)
+        return self._format_request_detail(solicitud, http_request)
+
+    def _ensure_can_access_request(self, solicitud, usuario) -> None:
+        if usuario is None:
+            return
         allowed = (
             usuario.rol == 'laboratorista'
             or solicitud.usuario_id == usuario.id
@@ -111,7 +136,6 @@ class RequestServices:
         )
         if not allowed:
             raise PermissionError("No tiene permisos para consultar esta solicitud.")
-        return self._format_request(solicitud)
 
     # ── request ────────────────────────────────────────────
     def link_equipment(self, solicitud_id: int, equipment_id: int):
@@ -238,7 +262,7 @@ class RequestServices:
     # ── Adjuntos ─────────────────────────────────────────────────────────────
 
     @transaction.atomic
-    def upload_attachment(self, solicitud_id: int, data: dict, usuario) -> dict:
+    def upload_attachment(self, solicitud_id: int, data: dict, usuario, http_request=None) -> dict:
         archivo = data.get('archivo')
         if not archivo:
             raise ValueError("Debe adjuntar un archivo.")
@@ -277,7 +301,75 @@ class RequestServices:
             ),
             usuario=usuario,
         )
-        return self._format_attachment(adjunto)
+        return self._format_attachment(adjunto, http_request)
+
+    def list_attachments(self, solicitud_id: int, usuario, http_request=None) -> list:
+        solicitud = self._get_request_or_fail(solicitud_id)
+        self._ensure_can_access_request(solicitud, usuario)
+        return [
+            self._format_attachment(adjunto, http_request)
+            for adjunto in self.request_repository.get_attachments(solicitud)
+        ]
+
+    def get_attachment_for_download(self, attachment_id: int, token: str):
+        from django.core import signing
+
+        try:
+            unsigned = signing.TimestampSigner().unsign(
+                token,
+                max_age=ATTACHMENT_DOWNLOAD_MAX_AGE_SECONDS,
+            )
+        except signing.BadSignature as exc:
+            raise PermissionError("El enlace de descarga no es valido o expiro.") from exc
+        if str(attachment_id) != unsigned:
+            raise PermissionError("El enlace de descarga no corresponde al archivo.")
+
+        adjunto = self.request_repository.get_attachment_by_id(attachment_id)
+        if not adjunto:
+            raise ValueError("Adjunto no encontrado.")
+        return adjunto
+
+    @transaction.atomic
+    def create_intervention(self, solicitud_id: int, data: dict, usuario) -> dict:
+        solicitud = self._get_request_or_fail(solicitud_id)
+        if solicitud.estado not in ('pendiente', 'en_proceso'):
+            raise ValueError("Solo se pueden registrar intervenciones en solicitudes activas.")
+
+        tecnico = None
+        if usuario is not None:
+            tecnico = self.request_repository.get_technician_by_user_id(usuario.id)
+
+        if usuario is None:
+            pass
+        elif usuario.rol == 'tecnico':
+            if not tecnico:
+                raise PermissionError("El usuario no tiene perfil tecnico.")
+            if not self.request_repository.is_user_assigned(solicitud, usuario.id):
+                raise PermissionError(
+                    "Solo un tecnico asignado puede registrar intervenciones."
+                )
+        elif usuario.rol != 'laboratorista':
+            raise PermissionError("No tiene permisos para registrar intervenciones.")
+
+        descripcion = str(data.get('descripcion', '')).strip()
+        if not descripcion:
+            raise ValueError("El campo 'descripcion' es obligatorio.")
+        observaciones = str(data.get('observaciones', '')).strip()
+        intervention = self.request_repository.create_intervention(
+            solicitud=solicitud,
+            tecnico=tecnico,
+            descripcion=descripcion,
+            observaciones=observaciones,
+        )
+        return self._format_intervention(intervention)
+
+    def list_interventions(self, solicitud_id: int, usuario) -> list:
+        solicitud = self._get_request_or_fail(solicitud_id)
+        self._ensure_can_access_request(solicitud, usuario)
+        return [
+            self._format_intervention(intervention)
+            for intervention in self.request_repository.get_interventions(solicitud)
+        ]
 
     @staticmethod
     def _validate_attachment_size(tamanio) -> None:
@@ -357,7 +449,16 @@ class RequestServices:
         }
 
     @staticmethod
-    def _format_attachment(adjunto) -> dict:
+    def _format_attachment(adjunto, http_request=None) -> dict:
+        download_url = None
+        if http_request:
+            from django.core import signing
+            from django.urls import reverse
+
+            download_path = reverse('information_app:descargar-adjunto', args=[adjunto.id])
+            token = signing.TimestampSigner().sign(str(adjunto.id))
+            download_url = f"{download_path}?token={token}"
+            download_url = http_request.build_absolute_uri(download_url)
         return {
             'adjunto_id':     adjunto.id,
             'nombre_archivo': adjunto.nombre_archivo,
@@ -365,6 +466,16 @@ class RequestServices:
             'tamanio_bytes':  adjunto.tamanio_bytes,
             'fecha_carga':    adjunto.fecha_carga.isoformat(),
             'solicitud_id':   adjunto.anexo.solicitud.id,
+            'descripcion':    adjunto.anexo.descripcion,
+            'responsable': (
+                {
+                    'id': adjunto.anexo.responsable.id,
+                    'name': adjunto.anexo.responsable.nombre,
+                    'email': adjunto.anexo.responsable.correo,
+                }
+                if adjunto.anexo.responsable else None
+            ),
+            'download_url':   download_url,
         }
 
     @staticmethod
@@ -418,3 +529,82 @@ class RequestServices:
         if len(unique_ids) != len(technician_ids):
             raise ValueError("Field 'technician_ids' cannot contain duplicated values.")
         return unique_ids
+
+    @staticmethod
+    def _format_request_summary(sol) -> dict:
+        return {
+            'id': sol.id,
+            'estado': sol.estado,
+            'prioridad': sol.prioridad,
+            'descripcion': sol.descripcion,
+            'equipo': (
+                {
+                    'id': sol.equipo.id,
+                    'name': sol.equipo.nombre,
+                    'inventory_code': sol.equipo.codigo_inventario,
+                    'location': sol.equipo.ubicacion,
+                }
+                if sol.equipo else None
+            ),
+            'datos_equipo_solicitado': sol.datos_equipo_solicitado,
+            'usuario': {
+                'id': sol.usuario.id,
+                'name': sol.usuario.nombre,
+                'email': sol.usuario.correo,
+                'role': sol.usuario.rol,
+            },
+            'created_at': sol.fecha_creacion.isoformat(),
+            'closed_at': sol.fecha_cierre.isoformat() if sol.fecha_cierre else None,
+        }
+
+    @staticmethod
+    def _format_request_detail(sol, http_request=None) -> dict:
+        detail = RequestServices._format_request_summary(sol)
+        detail['horario_agendado'] = (
+            RequestServices._format_schedule(sol.horario_agendado)
+            if sol.horario_agendado else None
+        )
+        detail['assigned_technicians'] = [
+            format_technician_data(assignment.tecnico)
+            for assignment in sol.asignaciones.all()
+            if assignment.activa
+        ]
+        detail['status_history'] = [
+            {
+                'id': history.id,
+                'previous_status': history.estado_anterior,
+                'new_status': history.estado_nuevo,
+                'reason': history.motivo,
+                'changed_at': history.fecha_cambio.isoformat(),
+                'changed_by': (
+                    {
+                        'id': history.usuario.id,
+                        'name': history.usuario.nombre,
+                        'email': history.usuario.correo,
+                    }
+                    if history.usuario else None
+                ),
+            }
+            for history in sol.historial_estados.all()
+        ]
+        detail['attachments'] = [
+            RequestServices._format_attachment(adjunto, http_request)
+            for anexo in sol.anexos.all()
+            for adjunto in anexo.adjuntos.all()
+        ]
+        detail['interventions'] = [
+            RequestServices._format_intervention(intervention)
+            for intervention in sol.intervenciones.all()
+        ]
+        return detail
+
+    @staticmethod
+    def _format_intervention(intervention) -> dict:
+        return {
+            'id': intervention.id,
+            'descripcion': intervention.descripcion,
+            'observaciones': intervention.observaciones,
+            'fecha_intervencion': intervention.fecha_intervencion.isoformat(),
+            'solicitud_id': intervention.solicitud_id,
+            'tecnico': format_technician_data(intervention.tecnico),
+        }
