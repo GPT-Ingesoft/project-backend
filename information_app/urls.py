@@ -409,8 +409,10 @@ urlpatterns = [
         'panel/equipos-dados-de-baja_debug/',
         DecommissionedEquipmentDashboardDebugView.as_view(),
         name='panel-equipos-dados-de-baja-debug'
-    'users/<int:user_id>/historial_debug/',
-    UserActivityHistoryDebugView.as_view(),
-    name='user-activity-history-debug'
+    ),
+    path(
+        'users/<int:user_id>/historial_debug/',
+        UserActivityHistoryDebugView.as_view(),
+        name='user-activity-history-debug'
     ),
 ]
