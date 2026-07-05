@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from django.utils import timezone
 from information_app.models import (
     Asignacion, Equipo, Solicitud, Tecnico,
-    HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion, Intervencion
+    HistorialEstadoSolicitud, Anexo, Adjunto, HorarioAtencion
 )
 from information_app.repositories.repository_utils import BaseRepository
 
@@ -141,6 +141,8 @@ class RequestRepository(BaseRepository):
         )
 
     def get_interventions(self, solicitud: Solicitud):
+        from information_app.models import Intervencion
+
         return (
             Intervencion.objects
             .select_related('tecnico__usuario')
@@ -242,7 +244,9 @@ class RequestRepository(BaseRepository):
 
     def create_intervention(
         self, solicitud: Solicitud, tecnico: Tecnico, descripcion: str, observaciones: str
-    ) -> Intervencion:
+    ):
+        from information_app.models import Intervencion
+
         return Intervencion.objects.create(
             solicitud=solicitud,
             tecnico=tecnico,
