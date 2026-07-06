@@ -35,7 +35,7 @@ class RequestDashboardView(BaseAPIView):
 class FailureReportView(BaseAPIView):
     @handle_exceptions
     def get(self, request):
-        self.get_lab_technician(request)
+        self.get_lab_technician_or_technician(request)
         reporte = AdminServices().get_failure_report()
         return Response(
             {'total_equipos': len(reporte), 'equipos': reporte},
@@ -45,7 +45,7 @@ class FailureReportView(BaseAPIView):
 class RepairTimeReportView(BaseAPIView):
     @handle_exceptions
     def get(self, request):
-        self.get_lab_technician(request)
+        self.get_lab_technician_or_technician(request)
         reporte = AdminServices().get_repair_time_report()
         return Response(
             {'total_equipos': len(reporte), 'equipos': reporte},
@@ -55,7 +55,7 @@ class RepairTimeReportView(BaseAPIView):
 class OutOfServiceReportView(BaseAPIView):
     @handle_exceptions
     def get(self, request):
-        self.get_lab_technician(request)
+        self.get_lab_technician_or_technician(request)
         umbral_dias = request.query_params.get('umbral_dias', None)
         return Response(
             AdminServices().get_out_of_service_equipment_report(umbral_dias),
@@ -65,7 +65,7 @@ class OutOfServiceReportView(BaseAPIView):
 class OutOfServiceThresholdView(BaseAPIView):
     @handle_exceptions
     def get(self, request):
-        self.get_lab_technician(request)
+        self.get_lab_technician_or_technician(request)
         return Response(
             AdminServices().get_out_of_service_threshold(),
             status=status.HTTP_200_OK,
