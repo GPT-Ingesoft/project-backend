@@ -92,6 +92,7 @@ from information_app.controllers.admin_controller import (
     DecommissionedEquipmentDashboardView,
     DecommissionedEquipmentDashboardDebugView,
 )
+from information_app.controllers.report_export_controller import ReportExportView
 
 app_name = 'information_app'
 
@@ -244,6 +245,11 @@ urlpatterns = [
         'admin/reportes/fuera-de-servicio/umbral/',
         OutOfServiceThresholdView.as_view(),
         name='admin-umbral-fuera-servicio'
+    ),
+    path(
+        'admin/reportes/<str:report_type>/pdf/',
+        ReportExportView.as_view(),
+        name='admin-exportar-reporte-pdf'
     ),
     path(
         'panel/equipos-activos/',
